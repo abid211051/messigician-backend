@@ -1,0 +1,13 @@
+export const ALLOWABLE_IMAGE_FORMAT = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/jpg",
+];
+
+export const ALLOWABLE_DOC_FORMAT = ["application/pdf"];
+
+export const MB = (n) => n * 1024 * 1024;
+
+export const ALLOWED_TOTAL_FILES = 3;
+export const CLOUDINARY_FOLDER = "messigician";
