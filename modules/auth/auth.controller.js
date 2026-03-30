@@ -1,8 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { createJwtToken } from "../../utils/jwtToken.js";
-import { cookieOptions } from "../../utils/cookieOptions.js";
-import { getOrCreateUserServe } from "./auth.services.js";
+import { setAccessToken, setRefreshToken } from "../../utils/jwtToken.js";
+import { getOrCreateUserServe, setRedirectPathServe } from "./auth.services.js";
 
 passport.use(
   new GoogleStrategy(
@@ -35,23 +34,19 @@ const googleAuthCallbackCtrl = passport.authenticate("google", {
 });
 
 const googleSucessfulAuthCtrl = (req, res) => {
-  const accessToken = createJwtToken("2d", req.user);
-  const refreshToken = createJwtToken("7d", req.user);
-
-  res.cookie(
-    "accessToken",
-    accessToken,
-    cookieOptions(2 * 24 * 60 * 60 * 1000),
-  );
-  res.cookie(
-    "refreshToken",
-    refreshToken,
-    cookieOptions(7 * 24 * 60 * 60 * 1000),
-  );
-
-  const redirect_path =
-    req.user?.role === "admin" ? "/admin/profile" : "/user/profile";
-  res.redirect(process.env.FRONTEND_URI + redirect_path);
+  setAccessToken({
+    payload: req.user,
+    res,
+  });
+  setRefreshToken({
+    payload: req.user,
+    res,
+  });
+  const redirect_path = setRedirectPathServe({
+    role: req.user.role,
+    mess_role: req.user.mess_role,
+  });
+  return res.redirect(process.env.FRONTEND_URI + redirect_path);
 };
 
 export { googleAuthInitCtrl, googleAuthCallbackCtrl, googleSucessfulAuthCtrl };

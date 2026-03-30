@@ -2,6 +2,7 @@ import {
   createMessService,
   messJoinRequestService,
 } from "./onboard.services.js";
+import { setAccessToken, setRefreshToken } from "../../utils/jwtToken.js";
 
 const messCreationCtrl = async (req, res, next) => {
   try {
@@ -9,6 +10,14 @@ const messCreationCtrl = async (req, res, next) => {
     const { fname } = req.body;
     const user_id = req.user.id;
     const response = await createMessService({ file, fname, user_id });
+    setAccessToken({
+      payload: response,
+      res,
+    });
+    setRefreshToken({
+      payload: response,
+      res,
+    });
     return res.status(201).json({ success: true, data: response });
   } catch (error) {
     next(error);

@@ -14,14 +14,14 @@ const messCreationCTEQuery = `
         SET mess_id = mess_row.id, mess_role = 'owner'
         FROM mess_row
         WHERE users.id = $4
-        RETURNING users.id, users.email, users.role
+        RETURNING users.id, users.email, users.role, users.mess_role
     ),
     manager_row AS (
         INSERT INTO sub_mess_managers (user_id, mess_id, sub_mess_id, is_owner)
         SELECT $4, mess_row.id, sub_mess_row.id, true
         FROM mess_row, sub_mess_row
     )
-    SELECT * FROM mess_row
+    SELECT * FROM update_user
 `;
 
 const checkUserIsInMessQuery = `

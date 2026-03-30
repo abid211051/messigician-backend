@@ -11,4 +11,14 @@ const getOrCreateUserServe = async ({ fname, email, avatar_url }) => {
   return rows[0];
 };
 
-export { getOrCreateUserServe };
+const setRedirectPathServe = ({ role, mess_role }) => {
+  return !mess_role
+    ? "/onboard"
+    : mess_role === "owner"
+      ? "/dashboard/owner"
+      : mess_role === "manager"
+        ? "/dashboard/manager"
+        : "/dashboard/member";
+};
+
+export { getOrCreateUserServe, setRedirectPathServe };

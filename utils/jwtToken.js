@@ -3,9 +3,31 @@ import { cookieOptions, cookieParser } from "./cookieOptions.js";
 import pool from "../config/db.js";
 import { findAUser } from "../modules/auth/auth.query.js";
 import AppError from "./appError.js";
+import {
+  ACCESSTOKEN_EXPIREY_MIN,
+  REFRESHTOKEN_EXPIREY_DAY,
+} from "./constants.js";
 
-const createJwtToken = (expireIn, payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: expireIn });
+const setAccessToken = ({ payload, res }) => {
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: ACCESSTOKEN_EXPIREY_MIN * 60,
+  });
+  res.cookie(
+    "accessToken",
+    token,
+    cookieOptions(ACCESSTOKEN_EXPIREY_MIN * 60 * 1000),
+  );
+};
+
+const setRefreshToken = ({ payload, res }) => {
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: REFRESHTOKEN_EXPIREY_DAY * 24 * 60 * 60,
+  });
+  res.cookie(
+    "refreshToken",
+    token,
+    cookieOptions(REFRESHTOKEN_EXPIREY_DAY * 24 * 60 * 60 * 1000),
+  );
 };
 
 const verifyJwtToken = (req, res, next) => {
@@ -37,13 +59,16 @@ const refreshAccessToken = async (req, res, next) => {
       id: rows[0].id,
       email: rows[0].email,
       role: rows[0].role,
+      mess_role: rows[0].mess_role,
     };
-    const accessToken = createJwtToken("5m", payload);
-    res.cookie("accessToken", accessToken, cookieOptions(5 * 60 * 1000));
+    setAccessToken({
+      payload,
+      res,
+    });
     return res.status(201).json({ success: true, data: payload });
   } catch (error) {
     next(error);
   }
 };
 
-export { createJwtToken, verifyJwtToken, refreshAccessToken };
+export { setAccessToken, setRefreshToken, verifyJwtToken, refreshAccessToken };

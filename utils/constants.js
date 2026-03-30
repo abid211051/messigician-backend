@@ -11,3 +11,5 @@ export const MB = (n) => n * 1024 * 1024;
 
 export const ALLOWED_TOTAL_FILES = 3;
 export const CLOUDINARY_FOLDER = "messigician";
+export const ACCESSTOKEN_EXPIREY_MIN = 5;
+export const REFRESHTOKEN_EXPIREY_DAY = 7;

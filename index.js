@@ -5,7 +5,6 @@ import cors from "cors";
 import { ZodError } from "zod";
 import { pgErrorHandler } from "./utils/appError.js";
 import AppError from "./utils/appError.js";
-
 import routes from "./routes.js";
 
 const app = express();
@@ -40,6 +39,7 @@ app.use((err, req, res, next) => {
       message: err.message,
     });
   }
+
   if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
     return res.status(401).json({
       success: false,
