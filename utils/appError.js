@@ -7,7 +7,7 @@ const PG_ERROR_CODES = {
   "42P01": { status: 500, message: "Table does not exist" },
 };
 
-const pgErrorHandler = (err) => {
+export const pgErrorHandler = (err) => {
   const pgError = PG_ERROR_CODES[err.code];
   if (!pgError) return null;
   return pgError;
@@ -20,5 +20,4 @@ class AppError extends Error {
   }
 }
 
-export { pgErrorHandler };
 export default AppError;

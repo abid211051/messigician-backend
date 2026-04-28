@@ -1,4 +1,4 @@
-const messCreationCTEQuery = `
+export const messCreationCTEQuery = `
     WITH mess_row AS (
         INSERT INTO mess (fname, images)
         VALUES ($1, $2::jsonb)
@@ -24,13 +24,13 @@ const messCreationCTEQuery = `
     SELECT * FROM update_user
 `;
 
-const checkUserIsInMessQuery = `
+export const checkUserIsInMessQuery = `
     SELECT mess_id, mess_role 
     FROM users
     WHERE id=$1 AND mess_id IS NOT NULL;
 `;
 
-const messJoinReqQuery = `
+export const messJoinReqQuery = `
     INSERT INTO users_join_request (user_id, mess_id, sub_mess_id)
     SELECT $1, $2, $3
     WHERE EXISTS (
@@ -41,4 +41,8 @@ const messJoinReqQuery = `
     RETURNING created_at
 `;
 
-export { messCreationCTEQuery, messJoinReqQuery, checkUserIsInMessQuery };
+export const getSubMessListQuery = `
+    SELECT id, fname, mess_id
+    FROM sub_mess
+    WHERE mess_id = $1
+`;

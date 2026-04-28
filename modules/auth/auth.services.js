@@ -15,10 +15,10 @@ const setRedirectPathServe = ({ role, mess_role }) => {
   return !mess_role
     ? "/onboard"
     : mess_role === "owner"
-      ? "/dashboard/owner"
+      ? "/users/owner"
       : mess_role === "manager"
-        ? "/dashboard/manager"
-        : "/dashboard/member";
+        ? "/users/manager"
+        : "/users/member";
 };
 
 export { getOrCreateUserServe, setRedirectPathServe };

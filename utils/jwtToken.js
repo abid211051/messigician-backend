@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { cookieOptions, cookieParser } from "./cookieOptions.js";
+import { cookieOptions, cookieParser } from "./optionsParserFomater.js";
 import pool from "../config/db.js";
 import { findAUser } from "../modules/auth/auth.query.js";
 import AppError from "./appError.js";
@@ -8,7 +8,7 @@ import {
   REFRESHTOKEN_EXPIREY_DAY,
 } from "./constants.js";
 
-const setAccessToken = ({ payload, res }) => {
+export const setAccessToken = ({ payload, res }) => {
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: ACCESSTOKEN_EXPIREY_MIN * 60,
   });
@@ -19,7 +19,7 @@ const setAccessToken = ({ payload, res }) => {
   );
 };
 
-const setRefreshToken = ({ payload, res }) => {
+export const setRefreshToken = ({ payload, res }) => {
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: REFRESHTOKEN_EXPIREY_DAY * 24 * 60 * 60,
   });
@@ -30,7 +30,7 @@ const setRefreshToken = ({ payload, res }) => {
   );
 };
 
-const verifyJwtToken = (req, res, next) => {
+export const verifyJwtToken = (req, res, next) => {
   const accessToken = cookieParser(req.headers.cookie).get("accessToken");
   if (!accessToken) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -44,7 +44,7 @@ const verifyJwtToken = (req, res, next) => {
   }
 };
 
-const refreshAccessToken = async (req, res, next) => {
+export const refreshAccessToken = async (req, res, next) => {
   const refreshToken = cookieParser(req.headers.cookie).get("refreshToken");
   if (!refreshToken) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -58,8 +58,8 @@ const refreshAccessToken = async (req, res, next) => {
     const payload = {
       id: rows[0].id,
       email: rows[0].email,
-      role: rows[0].role,
       mess_role: rows[0].mess_role,
+      mess_id: rows[0].mess_id,
     };
     setAccessToken({
       payload,
@@ -70,5 +70,3 @@ const refreshAccessToken = async (req, res, next) => {
     next(error);
   }
 };
-
-export { setAccessToken, setRefreshToken, verifyJwtToken, refreshAccessToken };

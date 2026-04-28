@@ -1,13 +1,14 @@
 import { uploadToCloudinary } from "../../config/cloudinary.js";
 import {
   checkUserIsInMessQuery,
+  getSubMessListQuery,
   messCreationCTEQuery,
   messJoinReqQuery,
 } from "./onboard.query.js";
 import pool from "../../config/db.js";
 import AppError from "../../utils/appError.js";
 
-const createMessService = async ({ file, fname, user_id }) => {
+export const createMessService = async ({ file, fname, user_id }) => {
   const { rowCount } = await pool.query(checkUserIsInMessQuery, [user_id]);
   if (rowCount > 0) {
     throw new AppError(409, "User already in a mess");
@@ -27,7 +28,11 @@ const createMessService = async ({ file, fname, user_id }) => {
   return rows[0];
 };
 
-const messJoinRequestService = async ({ user_id, mess_id, sub_mess_id }) => {
+export const messJoinRequestService = async ({
+  user_id,
+  mess_id,
+  sub_mess_id,
+}) => {
   const { rows, rowCount } = await pool.query(messJoinReqQuery, [
     user_id,
     mess_id,
@@ -40,4 +45,11 @@ const messJoinRequestService = async ({ user_id, mess_id, sub_mess_id }) => {
 
   return rows[0];
 };
-export { createMessService, messJoinRequestService };
+
+export const getSubMessListService = async ({ mess_id }) => {
+  const { rows } = await pool.query(getSubMessListQuery, [mess_id]);
+  if (rows.length === 0) {
+    throw new AppError(404, "No mess found with that ID");
+  }
+  return rows;
+};

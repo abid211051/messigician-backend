@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { imageFileSchema } from "../../utils/zodValidate.js";
 
-const createMessSchema = z.object({
+export const createMessSchema = z.object({
   body: z.object({
     fname: z
       .string({ error: "Name is required" })
@@ -11,10 +11,15 @@ const createMessSchema = z.object({
   file: imageFileSchema.optional(),
 });
 
-const messJoinReqSchema = z.object({
+export const messJoinReqSchema = z.object({
   body: z.object({
     mess_id: z.uuid({ error: "Invalid mess Id" }),
     sub_mess_id: z.uuid({ error: "Invalid sub mess Id" }),
   }),
 });
-export { createMessSchema, messJoinReqSchema };
+
+export const subMessListSchema = z.object({
+  params: z.object({
+    mess_id: z.uuid({ error: "Invalid mess Id" }),
+  }),
+});
