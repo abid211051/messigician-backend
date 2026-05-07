@@ -23,42 +23,51 @@ app.use("/v1", routes);
 
 // Global Error handling.
 app.use((err, req, res, next) => {
+  let statusCode = 500;
+  let message = "Internal Server Error";
+  let errors = null;
+
+  // 1. Zod Validation Errors
   if (err instanceof ZodError) {
-    return res.status(400).json({
-      success: false,
-      message: "Validation Failed",
-      errors: err.ZodError.map((e) => ({
-        field: e.path.jon("."),
-        massage: e.message,
-      })),
-    });
-  }
-  if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-    });
+    statusCode = 400;
+    message = "Validation Error";
+    errors = err.issues.map((e) => ({
+      field: e.path.join("."),
+      message: e.message,
+    }));
   }
 
-  if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired token",
-    });
+  // 2. Custom App Errors
+  else if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
   }
 
-  const pgError = pgErrorHandler(err);
-  if (pgError) {
-    return res.status(pgError.status).json({
-      success: false,
-      message: pgError.message,
-    });
+  // 3. JWT Errors
+  else if (
+    err.name === "JsonWebTokenError" ||
+    err.name === "TokenExpiredError"
+  ) {
+    statusCode = 401;
+    message = "Invalid or expired token";
   }
 
-  console.error(err);
-  return res.status(500).json({
+  // 4. Database Errors
+  else {
+    const pgError = pgErrorHandler(err);
+    if (pgError) {
+      statusCode = pgError.status;
+      message = pgError.message;
+    }
+  }
+
+  // Log the actual error for the backend team
+  if (statusCode === 500) console.error(err);
+
+  return res.status(statusCode).json({
     success: false,
-    message: "Internal Server Error",
+    message,
+    errors,
   });
 });
 
