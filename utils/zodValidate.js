@@ -6,16 +6,37 @@ import {
   MB,
 } from "./constants.js";
 
+// utils/zodValidate.js
+const safeSetRequestProperty = (req, key, value) => {
+  if (value === undefined) return;
+
+  Object.defineProperty(req, key, {
+    value: value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+};
+
 function validate(schema) {
   return (req, res, next) => {
     try {
-      schema.parse({
+      const parsed = schema.parse({
         body: req.body,
+        query: req.query,
+        params: req.params,
         file: req.file,
         files: req.files,
-        params: req.params,
-        query: req.query,
       });
+
+      const keysToInject = ["params", "query", "body", "file", "files"];
+
+      keysToInject.forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+          safeSetRequestProperty(req, key, parsed[key]);
+        }
+      });
+
       next();
     } catch (error) {
       next(error);

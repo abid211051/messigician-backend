@@ -8,15 +8,21 @@ export const joinRequestAcceptCtrl = async (req, res, next) => {
   try {
     const { request_id, user_id, sub_mess_id } = req.body;
 
-    await addUserToSubmessService({
+    const result = await addUserToSubmessService({
       request_id,
       user_id,
       sub_mess_id,
     });
 
+    if (result.status === "already_in_mess") {
+      return res.status(200).json({
+        success: true,
+        message: "User already belongs to a mess — request removed",
+      });
+    }
     return res.status(201).json({
       success: true,
-      message: "User added to sub mess",
+      message: "User added to successfully",
     });
   } catch (error) {
     next(error);

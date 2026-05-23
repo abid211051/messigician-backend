@@ -1,5 +1,9 @@
+import AppError from "../../../../utils/appError.js";
 import { PER_PAGE_ITEMS } from "../../../../utils/constants.js";
 import {
+  deleteBulkSubMessMembersRepo,
+  deleteSingleSubMessMemberRepo,
+  editSubMessMemberRepo,
   getAllSubMessByMessIdRepo,
   getAllSubMessMembersCntRepo,
   getAllSubMessMembersRepo,
@@ -20,44 +24,33 @@ export async function getAllSubMessMembersService({
   sub_mess_ids,
 }) {
   try {
-    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
-    let parsedSubMessIds = [];
-    if (typeof sub_mess_ids === "string" && sub_mess_ids.trim().length > 0) {
-      parsedSubMessIds = sub_mess_ids
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-    }
-
-    const totalSubMessMembers = parseInt(
+    const totalItems = Number(
       await getAllSubMessMembersCntRepo({
         mess_id,
-        sub_mess_ids: parsedSubMessIds,
+        sub_mess_ids,
       }),
-      10,
     );
 
-    if (!totalSubMessMembers || totalSubMessMembers < 1) {
+    if (!totalItems || totalItems < 1) {
       return {
         data: [],
         meta: {
-          totalItems: totalSubMessMembers,
-          totalPages: 0,
-          currentPage: 0,
+          totalItems: 0,
+          totalPages: 1,
+          currentPage: 1,
           itemsPerPage: PER_PAGE_ITEMS,
         },
       };
     }
 
-    const totalPages = Math.ceil(totalSubMessMembers / PER_PAGE_ITEMS);
-
-    const validPage = Math.min(parsedPage, totalPages);
-
+    // Pagination logic
+    const totalPages = Math.ceil(totalItems / PER_PAGE_ITEMS);
+    const validPage = Math.min(page, totalPages);
     const offset = (validPage - 1) * PER_PAGE_ITEMS;
 
     const members = await getAllSubMessMembersRepo({
       mess_id,
-      sub_mess_ids: parsedSubMessIds,
+      sub_mess_ids,
       limit: PER_PAGE_ITEMS,
       offset,
     });
@@ -65,7 +58,7 @@ export async function getAllSubMessMembersService({
     return {
       data: members,
       meta: {
-        totalItems: totalSubMessMembers,
+        totalItems,
         totalPages,
         currentPage: validPage,
         itemsPerPage: PER_PAGE_ITEMS,
@@ -74,4 +67,38 @@ export async function getAllSubMessMembersService({
   } catch (error) {
     throw error;
   }
+}
+
+export async function deleteSingleSubMessMemberService({ id }) {
+  const rowCnt = await deleteSingleSubMessMemberRepo({ id });
+  if (rowCnt === 0) {
+    throw new AppError(404, "Member not found or already deleted");
+  }
+  return true;
+}
+
+export async function deleteBulkSubMessMembersService({ ids }) {
+  const rowCnt = await deleteBulkSubMessMembersRepo({ ids });
+  if (rowCnt === 0) {
+    throw new AppError(404, "Member not found or already deleted");
+  }
+  return true;
+}
+
+export async function editSubMessMemberService({
+  id,
+  sub_mess_id,
+  monthly_rent,
+  total_due,
+}) {
+  const rowCnt = await editSubMessMemberRepo({
+    id,
+    sub_mess_id,
+    monthly_rent,
+    total_due,
+  });
+  if (rowCnt === 0) {
+    throw new AppError(404, "Member not found or no changes made");
+  }
+  return true;
 }

@@ -6,6 +6,7 @@ export const ALLOWABLE_IMAGE_FORMAT = [
 ];
 
 export const ALLOWABLE_DOC_FORMAT = ["application/pdf"];
+export const ENUM_SORT_ORDER = ["asc", "desc"];
 
 export const MB = (n) => n * 1024 * 1024;
 

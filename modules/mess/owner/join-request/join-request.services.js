@@ -1,10 +1,12 @@
 import pool from "../../../../config/db.js";
 import AppError from "../../../../utils/appError.js";
+
 import {
-  addUserIntoSubMess,
-  deleteFromJoinRequestTable,
-  getJoinRequestsByMessId,
-} from "./join-request.query.js";
+  fetchJoinRequestsByMessIdRepo,
+  getUserByIdForUpdateRepo,
+  insertUserIntoSubMessRepo,
+  removeJoinRequestRepo,
+} from "./join-request.repository.js";
 
 export const addUserToSubmessService = async ({
   request_id,
@@ -16,19 +18,32 @@ export const addUserToSubmessService = async ({
   try {
     await client.query("BEGIN");
 
-    const { rows, rowCount } = await client.query(addUserIntoSubMess, [
-      user_id,
-      sub_mess_id,
-    ]);
+    const user = await getUserByIdForUpdateRepo(client, user_id);
 
-    if (rowCount === 0) {
-      throw new AppError(409, "User is already in a mess");
+    if (!user) {
+      throw new AppError(404, "User not found");
     }
 
-    await client.query(deleteFromJoinRequestTable, [request_id]);
+    if (user.mess_id) {
+      await removeJoinRequestRepo(client, request_id);
+      await client.query("COMMIT");
+      return { status: "already_in_mess" };
+    }
+
+    const { rows, rowCount } = await insertUserIntoSubMessRepo(
+      client,
+      user_id,
+      sub_mess_id,
+    );
+
+    if (rowCount === 0) {
+      throw new AppError(409, "User is already assigned to a sub-mess");
+    }
+
+    await removeJoinRequestRepo(client, request_id);
     await client.query("COMMIT");
 
-    return rows[0];
+    return { status: "accepted", data: rows[0] };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -38,19 +53,25 @@ export const addUserToSubmessService = async ({
 };
 
 export const rejectJoinRequestService = async ({ request_id }) => {
-  const { rowCount } = await pool.query(deleteFromJoinRequestTable, [
-    request_id,
-  ]);
+  const client = await pool.connect();
 
-  if (rowCount === 0) {
-    throw new AppError(404, "Join request not found");
+  try {
+    await client.query("BEGIN");
+    const { rowCount } = await removeJoinRequestRepo(client, request_id);
+
+    if (rowCount === 0) {
+      throw new AppError(404, "Join request not found");
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
 };
 
 export const getJoinRequestsService = async ({ mess_id }) => {
-  const { rows } = await pool.query(getJoinRequestsByMessId, [mess_id]);
-  if (rows.length === 0) {
-    return [];
-  }
-  return rows;
+  return fetchJoinRequestsByMessIdRepo(mess_id);
 };

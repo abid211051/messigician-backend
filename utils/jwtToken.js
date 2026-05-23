@@ -51,7 +51,11 @@ export const refreshAccessToken = async (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+
     const { rows } = await pool.query(findAUser, [decoded.email]);
+    if (!rows.length) {
+      throw new AppError(404, "User not found");
+    }
     if (rows[0]?.ban) {
       throw new AppError(401, "Account has been banned");
     }

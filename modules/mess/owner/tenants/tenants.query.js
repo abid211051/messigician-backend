@@ -20,6 +20,9 @@ WHERE
 export const getAllSubMessMembersQuery = `
 SELECT 
     smm.*, 
+    smm.monthly_rent::float as monthly_rent,
+    smm.total_due::float as total_due,
+    smm.total_paid::float as total_paid,
     sm.fname as sub_mess_name,
     p.fname as tenant_name,
     p.images,
@@ -35,4 +38,28 @@ WHERE
   (cardinality($1::uuid[]) = 0 AND sm.mess_id = $2::uuid)
 ORDER BY smm.created_at DESC
 LIMIT $3 OFFSET $4
-  `;
+`;
+
+export const deleteSingleSubMessMemberQuery = `
+WITH delete_member AS (
+  DELETE FROM sub_mess_members
+  WHERE id = $1
+  RETURNING user_id
+)
+UPDATE users
+SET mess_id = NULL
+FROM delete_member
+WHERE users.id = delete_member.user_id
+`;
+
+export const deleteBulkSubMessMembersQuery = `
+WITH delete_members AS (
+  DELETE FROM sub_mess_members
+  WHERE id = ANY($1::uuid[])
+  RETURNING user_id
+)
+UPDATE users
+SET mess_id = NULL
+FROM delete_members
+WHERE users.id = delete_members.user_id
+`;

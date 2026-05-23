@@ -1,3 +1,7 @@
+export const getUserForUpdate = `
+  SELECT id, mess_id FROM users WHERE id = $1
+`;
+
 export const deleteFromJoinRequestTable = `
 DELETE FROM users_join_request
 WHERE id = $1

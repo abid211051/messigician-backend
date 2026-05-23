@@ -14,7 +14,7 @@ export const messCreationCTEQuery = `
         SET mess_id = mess_row.id, mess_role = 'owner'
         FROM mess_row
         WHERE users.id = $4
-        RETURNING users.id, users.email, users.role, users.mess_role
+        RETURNING users.id, users.email, users.mess_id, users.mess_role
     ),
     manager_row AS (
         INSERT INTO sub_mess_managers (user_id, mess_id, sub_mess_id, is_owner)
