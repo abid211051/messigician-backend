@@ -1,4 +1,9 @@
-import { getAllSubMessService } from "./sub-mess.services.js";
+import {
+  createSubMessService,
+  deleteSingleSubMessService,
+  deleteBulkSubMessService,
+  getAllSubMessService,
+} from "./sub-mess.services.js";
 
 export async function getAllSubMessCtrl(req, res, next) {
   try {
@@ -16,6 +21,46 @@ export async function getAllSubMessCtrl(req, res, next) {
     res.status(200).json({
       success: true,
       ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createSubMessCtrl(req, res, next) {
+  try {
+    const { mess_id } = req.params;
+    const { fname, total_rent, no_of_seats } = req.body;
+    await createSubMessService({ mess_id, fname, total_rent, no_of_seats });
+    res.status(201).json({
+      success: true,
+      message: "Sub mess created successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteSingleSubMessCtrl(req, res, next) {
+  try {
+    const { id } = req.params;
+    await deleteSingleSubMessService({ id });
+    res.status(200).json({
+      success: true,
+      message: "SubMess is Deleted Successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteBulkSubMessCtrl(req, res, next) {
+  try {
+    const { ids } = req.body;
+    await deleteBulkSubMessService({ ids });
+    res.status(200).json({
+      success: true,
+      message: "SubMess are Deleted Successfully",
     });
   } catch (error) {
     next(error);

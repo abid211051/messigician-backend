@@ -41,3 +41,26 @@ ORDER BY
     END DESC
 LIMIT $5 OFFSET $6
 `;
+
+export const createSubMessQuery = `
+    INSERT INTO sub_mess (mess_id, fname)
+    VALUES ($1, $2)
+    RETURNING id
+`;
+
+export const createSubMessInfoQuery = ({ values, fields, placeholders }) => `
+    INSERT INTO sub_mess_infos (${fields.join(", ")})
+    VALUES (${placeholders.join(", ")})
+`;
+
+export const deleteSingleSubMessQuery = `
+    DELETE FROM sub_mess
+    WHERE id = $1
+    RETURNING id;
+`;
+
+export const deleteBulkSubMessQuery = `
+    DELETE FROM sub_mess
+    WHERE id = ANY($1::uuid[])
+    RETURNING id;
+`;

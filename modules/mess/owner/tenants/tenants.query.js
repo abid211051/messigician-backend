@@ -41,25 +41,13 @@ LIMIT $3 OFFSET $4
 `;
 
 export const deleteSingleSubMessMemberQuery = `
-WITH delete_member AS (
   DELETE FROM sub_mess_members
   WHERE id = $1
   RETURNING user_id
-)
-UPDATE users
-SET mess_id = NULL
-FROM delete_member
-WHERE users.id = delete_member.user_id
 `;
 
 export const deleteBulkSubMessMembersQuery = `
-WITH delete_members AS (
   DELETE FROM sub_mess_members
   WHERE id = ANY($1::uuid[])
   RETURNING user_id
-)
-UPDATE users
-SET mess_id = NULL
-FROM delete_members
-WHERE users.id = delete_members.user_id
 `;

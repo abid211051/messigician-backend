@@ -72,7 +72,7 @@ export async function getAllSubMessMembersService({
 export async function deleteSingleSubMessMemberService({ id }) {
   const rowCnt = await deleteSingleSubMessMemberRepo({ id });
   if (rowCnt === 0) {
-    throw new AppError(404, "Member not found or already deleted");
+    throw new AppError(404, "Member is not found or already deleted");
   }
   return true;
 }
@@ -80,7 +80,7 @@ export async function deleteSingleSubMessMemberService({ id }) {
 export async function deleteBulkSubMessMembersService({ ids }) {
   const rowCnt = await deleteBulkSubMessMembersRepo({ ids });
   if (rowCnt === 0) {
-    throw new AppError(404, "Member not found or already deleted");
+    throw new AppError(404, "Members are not found or already deleted");
   }
   return true;
 }

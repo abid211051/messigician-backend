@@ -51,6 +51,23 @@ CREATE TYPE public.user_role AS ENUM (
 
 
 --
+-- Name: cleanup_user_mess_membership(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cleanup_user_mess_membership() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET mess_id = null
+    WHERE users.id = OLD.user_id;
+
+    RETURN OLD;
+END;
+$$;
+
+
+--
 -- Name: reset_mess_role(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -205,7 +222,8 @@ CREATE TABLE public.users (
     ban boolean DEFAULT false,
     ban_reason text,
     mess_id uuid,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -351,6 +369,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: sub_mess_members cleanup_user_mess_membership_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER cleanup_user_mess_membership_trigger AFTER DELETE ON public.sub_mess_members FOR EACH ROW EXECUTE FUNCTION public.cleanup_user_mess_membership();
+
+
+--
 -- Name: users trigger_reset_mess_role; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -376,6 +401,13 @@ CREATE TRIGGER update_sub_mess_infos_updated_at BEFORE UPDATE ON public.sub_mess
 --
 
 CREATE TRIGGER update_sub_mess_members_updated_at BEFORE UPDATE ON public.sub_mess_members FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -504,4 +536,5 @@ ALTER TABLE ONLY public.users_join_request
 INSERT INTO public.schema_migrations (version) VALUES
     ('20260517133414'),
     ('20260517164233'),
-    ('20260521185045');
+    ('20260521185045'),
+    ('20260525153325');

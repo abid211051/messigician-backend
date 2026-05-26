@@ -4,6 +4,7 @@ const PG_ERROR_CODES = {
   23502: { status: 400, message: "Required field is missing" },
   23514: { status: 400, message: "Value violates check constraint" },
   42703: { status: 400, message: "Column does not exist" },
+  22003: { status: 400, message: "Too large value for the field" },
   "22P02": { status: 400, message: "Invalid input syntax" },
   "42P01": { status: 500, message: "Table does not exist" },
 };

@@ -1,6 +1,10 @@
+import AppError from "../../../../utils/appError.js";
 import { PER_PAGE_ITEMS } from "../../../../utils/constants.js";
 import {
   cntAllSubMessInfoRepo,
+  createSubMessRepo,
+  deleteSingleSubMessRepo,
+  deleteBulkSubMessRepo,
   getAllSubMessInfoDataRepo,
 } from "./sub-mess.repository.js";
 
@@ -58,4 +62,30 @@ export async function getAllSubMessService({
       sortOrder,
     },
   };
+}
+
+export async function createSubMessService({
+  mess_id,
+  fname,
+  total_rent,
+  no_of_seats,
+}) {
+  await createSubMessRepo({ mess_id, fname, total_rent, no_of_seats });
+  return true;
+}
+
+export async function deleteSingleSubMessService({ id }) {
+  const rowCnt = await deleteSingleSubMessRepo({ id });
+  if (rowCnt === 0) {
+    throw new AppError(404, "Sub-Mess is not found or already deleted");
+  }
+  return true;
+}
+
+export async function deleteBulkSubMessService({ ids }) {
+  const rowCnt = await deleteBulkSubMessRepo({ ids });
+  if (rowCnt === 0) {
+    throw new AppError(404, "Sub-Mess are not found or already deleted");
+  }
+  return true;
 }
