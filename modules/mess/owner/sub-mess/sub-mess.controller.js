@@ -3,6 +3,7 @@ import {
   deleteSingleSubMessService,
   deleteBulkSubMessService,
   getAllSubMessService,
+  getSingleSubMessService,
 } from "./sub-mess.services.js";
 
 export async function getAllSubMessCtrl(req, res, next) {
@@ -21,6 +22,19 @@ export async function getAllSubMessCtrl(req, res, next) {
     res.status(200).json({
       success: true,
       ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSingleSubMessCtrl(req, res, next) {
+  try {
+    const { id } = req.params;
+    const data = await getSingleSubMessService({ id });
+    res.status(200).json({
+      success: true,
+      data,
     });
   } catch (error) {
     next(error);

@@ -6,6 +6,7 @@ import {
   deleteSingleSubMessRepo,
   deleteBulkSubMessRepo,
   getAllSubMessInfoDataRepo,
+  getSingleSubMessInfoRepo,
 } from "./sub-mess.repository.js";
 
 export async function getAllSubMessService({
@@ -62,6 +63,14 @@ export async function getAllSubMessService({
       sortOrder,
     },
   };
+}
+
+export async function getSingleSubMessService({ id }) {
+  const data = await getSingleSubMessInfoRepo({ id });
+  if (!data) {
+    throw new AppError(404, "Sub-Mess is not found");
+  }
+  return data;
 }
 
 export async function createSubMessService({

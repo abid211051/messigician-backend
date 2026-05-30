@@ -35,6 +35,12 @@ export const getAllSubMessWithInfoSchema = z.object({
   }),
 });
 
+export const getSingleSubMessInfoSchema = z.object({
+  params: z.object({
+    id: z.uuid("Invalid sub-mess ID format"),
+  }),
+});
+
 export const createSubMessSchema = z.object({
   params: z.object({
     mess_id: z.uuid("Invalid mess_id format"),

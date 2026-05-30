@@ -6,6 +6,7 @@ import {
   deleteSingleSubMessQuery,
   deleteBulkSubMessQuery,
   getAllSubMessInfoDataQuery,
+  getSingleSubMessInfoQuery,
 } from "./sub-mess.query.js";
 
 const searchQueryFun = (search) => (search ? `%${search}%` : null);
@@ -35,6 +36,11 @@ export async function getAllSubMessInfoDataRepo({
     offset,
   ]);
   return rows;
+}
+
+export async function getSingleSubMessInfoRepo({ id }) {
+  const { rows } = await pool.query(getSingleSubMessInfoQuery, [id]);
+  return rows[0];
 }
 
 export async function createSubMessRepo({

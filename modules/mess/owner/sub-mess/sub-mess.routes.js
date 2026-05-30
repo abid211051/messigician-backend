@@ -5,6 +5,7 @@ import { validate } from "../../../../utils/zodValidate.js";
 
 import {
   getAllSubMessCtrl,
+  getSingleSubMessCtrl,
   createSubMessCtrl,
   deleteSingleSubMessCtrl,
   deleteBulkSubMessCtrl,
@@ -14,6 +15,7 @@ import {
   deleteBulkSubMessSchema,
   deleteSingleSubMessSchema,
   getAllSubMessWithInfoSchema,
+  getSingleSubMessInfoSchema,
 } from "./sub-mess.validation.js";
 
 const router = Router();
@@ -24,6 +26,14 @@ router.get(
   isVerifiedRole("owner"),
   validate(getAllSubMessWithInfoSchema),
   getAllSubMessCtrl,
+);
+
+router.get(
+  "/:id",
+  verifyJwtToken,
+  isVerifiedRole("owner"),
+  validate(getSingleSubMessInfoSchema),
+  getSingleSubMessCtrl,
 );
 
 router.post(

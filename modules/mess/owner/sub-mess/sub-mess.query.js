@@ -42,6 +42,28 @@ ORDER BY
 LIMIT $5 OFFSET $6
 `;
 
+export const getSingleSubMessInfoQuery = `
+    SELECT 
+        sm.id,
+        sm.fname as sub_mess_name,
+        sm.created_at,
+        smi.total_rent,
+        smi.total_utility,
+        smi.no_of_seats,
+        COUNT(smm.id) as no_of_members
+    FROM sub_mess sm
+    LEFT JOIN sub_mess_infos smi ON sm.id = smi.sub_mess_id
+    LEFT JOIN sub_mess_members smm ON sm.id = smm.sub_mess_id
+    WHERE sm.id = $1
+    GROUP BY 
+        sm.id, 
+        sm.fname, 
+        sm.created_at, 
+        smi.total_rent, 
+        smi.total_utility, 
+        smi.no_of_seats
+`;
+
 export const createSubMessQuery = `
     INSERT INTO sub_mess (mess_id, fname)
     VALUES ($1, $2)
