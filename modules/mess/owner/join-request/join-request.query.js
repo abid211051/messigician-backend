@@ -20,6 +20,7 @@ SET mess_id = (
         FROM sub_mess 
         WHERE sub_mess.id = sub_mess_add.sub_mess_id
     ),
+    sub_mess_id = sub_mess_add.sub_mess_id,
     mess_role = 'member'
 FROM sub_mess_add
 WHERE users.id = sub_mess_add.user_id

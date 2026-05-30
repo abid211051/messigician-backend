@@ -9,7 +9,7 @@ import routes from "./routes.js";
 const app = express();
 app.use(
   cors({
-    origin: process.env.FRONTEND_URI,
+    origin: [process.env.FRONTEND_URI],
     credentials: true,
   }),
 );
@@ -70,6 +70,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT, "localhost", () => {
   console.log("server running at port:", process.env.PORT);
 });

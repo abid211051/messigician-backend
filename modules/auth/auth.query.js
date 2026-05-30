@@ -4,7 +4,7 @@ const userAndProfileCTEQuery = `
       VALUES ($1)
       ON CONFLICT (email) DO UPDATE
       SET email = EXCLUDED.email
-      RETURNING id, email, mess_role, mess_id
+      RETURNING id, email, mess_role, mess_id, sub_mess_id
     ),
     profile_row AS (
       INSERT INTO profiles (user_id, fname, images)

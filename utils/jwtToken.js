@@ -64,6 +64,7 @@ export const refreshAccessToken = async (req, res, next) => {
       email: rows[0].email,
       mess_role: rows[0].mess_role,
       mess_id: rows[0].mess_id,
+      sub_mess_id: rows[0].sub_mess_id,
     };
     setAccessToken({
       payload,

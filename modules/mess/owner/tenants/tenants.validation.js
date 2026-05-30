@@ -55,12 +55,12 @@ export const editSubMessMemberSchema = z.object({
   body: z
     .object({
       sub_mess_id: z.uuid({ error: "Invalid Sub Mess ID" }).optional(),
-      total_due: z.coerce
-        .number({ error: "Total due must be a number" })
+      monthly_rent: z
+        .union([z.number({ error: "Monthly rent must be a number" }), z.null()])
         .optional(),
 
-      monthly_rent: z.coerce
-        .number({ error: "Monthly rent must be a number" })
+      total_due: z
+        .union([z.number({ error: "Total due must be a number" }), z.null()])
         .optional(),
     })
     .refine(
@@ -70,7 +70,7 @@ export const editSubMessMemberSchema = z.object({
         data.total_due !== undefined,
       {
         error:
-          "At least one of sub_mess_id, Monthly rent or Total due must be provided",
+          "At least one of sub_mess_id, monthly_rent or total_due must be provided",
       },
     ),
 });

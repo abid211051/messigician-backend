@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
--- Dumped by pg_dump version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+-- Dumped from database version 16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -59,7 +59,7 @@ CREATE FUNCTION public.cleanup_user_mess_membership() RETURNS trigger
     AS $$
 BEGIN
     UPDATE users
-    SET mess_id = null
+    SET mess_id = null, sub_mess_id = null
     WHERE users.id = OLD.user_id;
 
     RETURN OLD;
@@ -172,8 +172,8 @@ CREATE TABLE public.sub_mess (
 CREATE TABLE public.sub_mess_infos (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     sub_mess_id uuid NOT NULL,
-    total_rent numeric(10,2) DEFAULT 0,
-    total_utility numeric(10,2) DEFAULT 0,
+    total_rent numeric(10,2),
+    total_utility numeric(10,2),
     no_of_seats integer DEFAULT 1,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
@@ -203,9 +203,9 @@ CREATE TABLE public.sub_mess_members (
     user_id uuid NOT NULL,
     sub_mess_id uuid NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
-    monthly_rent numeric(10,2) DEFAULT 0,
-    total_due numeric(10,2) DEFAULT 0,
-    total_paid numeric(10,2) DEFAULT 0,
+    monthly_rent numeric(10,2),
+    total_due numeric(10,2),
+    total_paid numeric(10,2),
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -223,7 +223,8 @@ CREATE TABLE public.users (
     ban_reason text,
     mess_id uuid,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sub_mess_id uuid
 );
 
 
@@ -523,6 +524,14 @@ ALTER TABLE ONLY public.users_join_request
 
 
 --
+-- Name: users users_sub_mess_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_sub_mess_id_fkey FOREIGN KEY (sub_mess_id) REFERENCES public.sub_mess(id) ON DELETE SET NULL;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -537,4 +546,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260517133414'),
     ('20260517164233'),
     ('20260521185045'),
-    ('20260525153325');
+    ('20260525153325'),
+    ('20260527155416');

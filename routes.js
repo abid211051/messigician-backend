@@ -7,6 +7,12 @@ import subMessRoutes from "./modules/mess/owner/sub-mess/sub-mess.routes.js";
 
 const router = Router();
 
+router.get("/test", (req, res) => {
+  res.status(200).json({
+    message: "API is working fine",
+  });
+});
+
 router.use("/auth", authRoutes);
 router.use("/onboard", onboardRoutes);
 router.use("/join-request", joinRequestRoutes);

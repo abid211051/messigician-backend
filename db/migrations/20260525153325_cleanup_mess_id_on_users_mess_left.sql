@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION cleanup_user_mess_membership()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE users
-    SET mess_id = null
+    SET mess_id = null, sub_mess_id = null
     WHERE users.id = OLD.user_id;
 
     RETURN OLD;
