@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model meal_deposits {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_month_id    String           @db.Uuid
+  member_id        String           @db.Uuid
+  amount           Decimal          @db.Decimal(10, 2)
+  note             String?
+  added_by         String           @db.Uuid
+  created_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  users            users            @relation(fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meal_months      meal_months      @relation(fields: [meal_month_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sub_mess_members sub_mess_members @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([meal_month_id, member_id], map: "idx_meal_deposits_member")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model meal_entries {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_month_id    String           @db.Uuid
+  member_id        String           @db.Uuid
+  phase_id         String           @db.Uuid
+  day_number       Int              @db.SmallInt
+  count            Int              @default(0) @db.SmallInt
+  created_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  meal_months      meal_months      @relation(fields: [meal_month_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sub_mess_members sub_mess_members @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  meal_phases      meal_phases      @relation(fields: [phase_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([meal_month_id, member_id, day_number, phase_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model meal_months {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sub_mess_id   String          @db.Uuid
+  meal_year     Int             @db.SmallInt
+  meal_month    Int             @db.SmallInt
+  meal_status   meal_status     @default(active)
+  rate_type     meal_rate_type  @default(dynamic)
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  meal_deposits meal_deposits[]
+  meal_entries  meal_entries[]
+  sub_mess      sub_mess        @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  meal_phases   meal_phases[]
+  meal_shopping meal_shopping[]
+
+  @@unique([sub_mess_id, meal_year, meal_month])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model meal_phases {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_month_id String         @db.Uuid
+  phase_name    String
+  phase_rate    Decimal        @default(0) @db.Decimal(5, 2)
+  edit_start    DateTime       @default(dbgenerated("'00:00:00'::time without time zone")) @db.Time(6)
+  edit_end      DateTime       @default(dbgenerated("'23:59:59'::time without time zone")) @db.Time(6)
+  sort_order    Int            @default(0) @db.SmallInt
+  created_at    DateTime?      @default(now()) @db.Timestamptz(6)
+  meal_entries  meal_entries[]
+  meal_months   meal_months    @relation(fields: [meal_month_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([meal_month_id, sort_order], map: "idx_meal_phases_month")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model meal_shopping {
+  id                                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meal_month_id                         String      @db.Uuid
+  day_number                            Int         @db.SmallInt
+  amount                                Decimal     @db.Decimal(10, 2)
+  note                                  String?
+  shopped_by                            String      @db.Uuid
+  added_by                              String      @db.Uuid
+  created_at                            DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime?   @default(now()) @db.Timestamptz(6)
+  users_meal_shopping_added_byTousers   users       @relation("meal_shopping_added_byTousers", fields: [added_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meal_months                           meal_months @relation(fields: [meal_month_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_meal_shopping_shopped_byTousers users       @relation("meal_shopping_shopped_byTousers", fields: [shopped_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([meal_month_id, day_number], map: "idx_meal_shopping_month")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mess {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fname              String
+  images             Json?                @default("[]")
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  sub_mess           sub_mess[]
+  sub_mess_managers  sub_mess_managers[]
+  users              users[]
+  users_join_request users_join_request[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payment_histories {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  sub_mess_id  String   @db.Uuid
+  amount       Decimal  @db.Decimal(10, 2)
+  note         String?
+  payment_date DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  sub_mess     sub_mess @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profiles {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @unique @db.Uuid
+  fname      String?
+  images     Json?     @default("[]")
+  phone      String?   @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schema_migrations {
+  version String @id @db.VarChar
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sub_mess {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mess_id            String               @db.Uuid
+  fname              String
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  meal_months        meal_months[]
+  payment_histories  payment_histories[]
+  mess               mess                 @relation(fields: [mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sub_mess_infos     sub_mess_infos?
+  sub_mess_managers  sub_mess_managers[]
+  sub_mess_members   sub_mess_members[]
+  users              users[]
+  users_join_request users_join_request[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sub_mess_infos {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sub_mess_id   String    @unique @db.Uuid
+  total_rent    Decimal?  @db.Decimal(10, 2)
+  total_utility Decimal?  @db.Decimal(10, 2)
+  no_of_seats   Int?      @default(1)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  sub_mess      sub_mess  @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_sub_mess_infos_sub_mess")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sub_mess_managers {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  mess_id     String    @db.Uuid
+  sub_mess_id String    @db.Uuid
+  is_owner    Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  mess        mess      @relation(fields: [mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sub_mess    sub_mess  @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, sub_mess_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sub_mess_members {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String          @unique(map: "unique_member_sub_mess") @db.Uuid
+  sub_mess_id   String          @db.Uuid
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  monthly_rent  Decimal?        @db.Decimal(10, 2)
+  total_due     Decimal?        @db.Decimal(10, 2)
+  total_paid    Decimal?        @db.Decimal(10, 2)
+  updated_at    DateTime        @default(now()) @db.Timestamptz(6)
+  meal_deposits meal_deposits[]
+  meal_entries  meal_entries[]
+  sub_mess      sub_mess        @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                         String               @unique
+  role                                          user_role            @default(user)
+  ban                                           Boolean?             @default(false)
+  ban_reason                                    String?
+  mess_id                                       String?              @db.Uuid
+  created_at                                    DateTime?            @default(now()) @db.Timestamptz(6)
+  mess_role                                     mess_role?
+  updated_at                                    DateTime             @default(now()) @db.Timestamptz(6)
+  sub_mess_id                                   String?              @db.Uuid
+  meal_deposits                                 meal_deposits[]
+  meal_shopping_meal_shopping_added_byTousers   meal_shopping[]      @relation("meal_shopping_added_byTousers")
+  meal_shopping_meal_shopping_shopped_byTousers meal_shopping[]      @relation("meal_shopping_shopped_byTousers")
+  payment_histories                             payment_histories[]
+  profiles                                      profiles?
+  sub_mess_managers                             sub_mess_managers[]
+  sub_mess_members                              sub_mess_members?
+  mess                                          mess?                @relation(fields: [mess_id], references: [id], onUpdate: NoAction, map: "fk_users_mess")
+  sub_mess                                      sub_mess?            @relation(fields: [sub_mess_id], references: [id], onUpdate: NoAction)
+  users_join_request                            users_join_request[]
+  refresh_tokens                                refresh_tokens[]
+}
+
+model refresh_tokens {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  revoked_at DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  users users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users_join_request {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  mess_id     String    @db.Uuid
+  sub_mess_id String    @db.Uuid
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  mess        mess      @relation(fields: [mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sub_mess    sub_mess  @relation(fields: [sub_mess_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, sub_mess_id], map: "unique_join_request")
+}
+
+enum meal_rate_type {
+  dynamic
+  fixed
+}
+
+enum meal_status {
+  active
+  closed
+}
+
+enum mess_role {
+  owner
+  manager
+  member
+}
+
+enum user_role {
+  user
+  admin
+  moderator
+}
