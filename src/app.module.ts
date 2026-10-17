@@ -6,15 +6,6 @@ import { JoinRequestModule } from './join-request/join-request.module.js';
 import { SubMessModule } from './sub-mess/sub-mess.module.js';
 import { TenantModule } from './tenant/tenant.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
-import { Controller, Get } from '@nestjs/common';
-
-@Controller()
-class AppController {
-  @Get()
-  health() {
-    return 'Hello World!';
-  }
-}
 
 @Module({
   imports: [
@@ -28,7 +19,7 @@ class AppController {
     TenantModule,
     PrismaModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [],
 })
 export class AppModule {}

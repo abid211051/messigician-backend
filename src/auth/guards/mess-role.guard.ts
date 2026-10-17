@@ -1,0 +1,38 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { MESS_ROLE_KEY } from '../decorators/mess-role.decorator.js';
+import { IUser } from '../auth.types.js';
+
+@Injectable()
+export class MessRoleGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const allowedRoles = this.reflector.getAllAndOverride<string[]>(
+      MESS_ROLE_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!allowedRoles?.length)
+      throw new ForbiddenException('No roles configured for this route');
+
+    const request = context
+      .switchToHttp()
+      .getRequest<
+        Request & { user: Omit<IUser, 'created_at' | 'updated_at'> }
+      >();
+
+    const user = request.user;
+    if (!user) throw new UnauthorizedException('Unauthorized');
+
+    if (!allowedRoles.includes(user.mess_role ?? ''))
+      throw new ForbiddenException('Forbidden');
+    return true;
+  }
+}
