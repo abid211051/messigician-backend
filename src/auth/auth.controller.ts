@@ -7,18 +7,20 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { GoogleAuthGuard } from './guards/google.guard.js';
 import { AuthService } from './auth.service.js';
-import { ConfigService } from '@nestjs/config';
 import type { IAuthReq } from './auth.types.js';
-import type { Response } from 'express';
 import {
   ACCESS_TOKEN_COOKIE,
-  ACCESS_TOKEN_MAX_AGE,
   getAuthCookieOptions,
   REFRESH_TOKEN_COOKIE,
-  REFRESH_TOKEN_MAX_AGE,
 } from './auth.constants.js';
+import {
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+} from '../../utils/set-auth-cookies.util.js';
 
 @Controller('auth')
 export class AuthController {
@@ -26,6 +28,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {}
+
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth() {}
@@ -33,50 +36,51 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Req() req: IAuthReq, @Res() res: Response) {
-    const { accessToken, refreshToken } = await this.authService.issueTokens(
-      req.user!,
-    );
-    const cookieOptions = getAuthCookieOptions(this.configService);
-    res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
-      ...cookieOptions,
-      maxAge: ACCESS_TOKEN_MAX_AGE,
-    });
+    const user = req.user;
 
-    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
-      ...cookieOptions,
-      maxAge: REFRESH_TOKEN_MAX_AGE,
-    });
+    if (!user) {
+      throw new UnauthorizedException('Google authentication failed');
+    }
+
+    const accessToken = await this.authService.generateAccessToken(user);
+    const refreshToken = await this.authService.generateRefreshToken(user);
+
+    setAccessTokenCookie(res, accessToken, this.configService);
+    setRefreshTokenCookie(res, refreshToken, this.configService);
 
     const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URI');
 
     return res.redirect(
-      `${frontendUrl}${this.authService.getRedirectUrl({ mess_role: req.user?.mess_role! })}`,
+      `${frontendUrl}${this.authService.getRedirectUrl({
+        mess_role: user.mess_role ?? null,
+      })}`,
     );
   }
 
   @Post('refresh')
-  async refresh(@Req() req: IAuthReq, @Res() res: Response) {
-    const refreshToken = req?.cookies?.[REFRESH_TOKEN_COOKIE];
+  async refresh(
+    @Req() req: IAuthReq,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refreh token missing');
+      throw new UnauthorizedException('Refresh token missing');
     }
 
     const { accessToken } =
       await this.authService.refreshAccessToken(refreshToken);
 
-    res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
-      ...getAuthCookieOptions(this.configService),
-      maxAge: ACCESS_TOKEN_MAX_AGE,
-    });
+    setAccessTokenCookie(res, accessToken, this.configService);
 
-    return res.status(200).json({
-      success: true,
-    });
+    return { message: 'Access token refreshed' };
   }
 
   @Post('logout')
-  async logout(@Req() req: IAuthReq, @Res() res: Response) {
+  async logout(
+    @Req() req: IAuthReq,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (refreshToken) {
@@ -88,9 +92,6 @@ export class AuthController {
     res.clearCookie(ACCESS_TOKEN_COOKIE, cookieOptions);
     res.clearCookie(REFRESH_TOKEN_COOKIE, cookieOptions);
 
-    return res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+    return { message: 'Logged out successfully' };
   }
 }

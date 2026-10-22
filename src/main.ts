@@ -1,8 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  StandardSchemaValidationPipe,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
+import { TransformResponseInterceptor } from './core/Interceptors/transform-response.interceptor.js';
+import { AllExceptionsFilter } from './core/filters/prisma-exception.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,14 +19,10 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.use(cookieParser());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
 
+  app.useGlobalPipes(new StandardSchemaValidationPipe());
+  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalInterceptors(new TransformResponseInterceptor());
   app.enableCors({
     origin: config.getOrThrow<string>('FRONTEND_URI'),
     credentials: true,
