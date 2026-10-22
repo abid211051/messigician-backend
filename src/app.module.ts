@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { CoreModule } from './core/core.module.js';
 import { OnboardModule } from './onboard/onboard.module.js';
+import { JoinRequestModule } from './mess/owner/join-request/join-request.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { OnboardModule } from './onboard/onboard.module.js';
     OnboardModule,
     CoreModule,
     PrismaModule,
+    JoinRequestModule,
   ],
   controllers: [],
   providers: [],

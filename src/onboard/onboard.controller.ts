@@ -51,7 +51,7 @@ export class OnboardController {
   async createMess(
     @Req() req: IAuthReq,
     @Res({ passthrough: true }) res: Response,
-    @Body(new ZodValidationPipe(createMessSchema.shape.body))
+    @Body({ schema: createMessSchema.shape.body })
     body: CreateMessBodyDto,
     @UploadedFile(new ZodValidationPipe(createMessSchema.shape.file))
     file?: Express.Multer.File,
@@ -77,7 +77,7 @@ export class OnboardController {
 
   @Get('sub-mess-list/:mess_id')
   async getSubMessList(
-    @Param(new ZodValidationPipe(subMessListSchema.shape.params))
+    @Param({ schema: subMessListSchema.shape.params })
     params: SubMessListParamsDto,
   ) {
     return await this.onboardService.getSubMessList(params.mess_id);
@@ -87,7 +87,7 @@ export class OnboardController {
   async createJoinRequest(
     @Req() req: AuthenticatedRequest,
 
-    @Body(new ZodValidationPipe(messJoinReqSchema.shape.body))
+    @Body({ schema: messJoinReqSchema.shape.body })
     body: MessJoinReqBodyDto,
   ) {
     return await this.onboardService.createJoinRequest({
