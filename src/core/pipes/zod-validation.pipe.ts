@@ -6,17 +6,17 @@ import {
 import { z } from 'zod';
 
 @Injectable()
-export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
-  constructor(private readonly schema: z.ZodType<T>) {}
+export class ZodValidationPipe implements PipeTransform {
+  constructor(private readonly schema: z.ZodType) {}
 
-  transform(value: unknown): T {
+  transform(value: unknown) {
     const result = this.schema.safeParse(value);
 
     if (!result.success) {
       throw new BadRequestException({
         message: 'Validation failed',
-        errors: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
+        details: result.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
           message: issue.message,
         })),
       });

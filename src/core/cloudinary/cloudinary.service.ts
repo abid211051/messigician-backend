@@ -4,11 +4,7 @@ import { readFile, unlink } from 'node:fs/promises';
 import { v2 as cloudinary } from 'cloudinary';
 
 import { CLOUDINARY_FOLDER } from '../core.constant.js';
-
-export interface CloudinaryImage {
-  url: string;
-  public_id: string;
-}
+import { CloudinaryImage } from '../core.types.js';
 
 @Injectable()
 export class CloudinaryService {

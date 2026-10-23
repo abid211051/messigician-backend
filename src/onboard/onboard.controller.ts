@@ -33,10 +33,6 @@ import {
   setRefreshTokenCookie,
 } from '../../utils/set-auth-cookies.util.js';
 
-type AuthenticatedRequest = Request & {
-  user: { id: string };
-};
-
 @Controller('onboard')
 @UseGuards(JwtAuthGuard)
 export class OnboardController {
@@ -85,7 +81,7 @@ export class OnboardController {
 
   @Post('join-request')
   async createJoinRequest(
-    @Req() req: AuthenticatedRequest,
+    @Req() req: IAuthReq,
 
     @Body({ schema: messJoinReqSchema.shape.body })
     body: MessJoinReqBodyDto,
