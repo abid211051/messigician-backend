@@ -30,5 +30,5 @@ export type IGoogleUserPayload = Omit<
 >;
 
 export interface IAuthReq extends Request {
-  user?: IGoogleUserPayload;
+  user: IGoogleUserPayload;
 }
