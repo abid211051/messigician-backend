@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { CoreModule } from './core/core.module.js';
 import { OnboardModule } from './onboard/onboard.module.js';
 import { JoinRequestModule } from './mess/owner/join-request/join-request.module.js';
+import { SubMessModule } from './mess/owner/sub-mess/sub-mess.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { JoinRequestModule } from './mess/owner/join-request/join-request.module
     CoreModule,
     PrismaModule,
     JoinRequestModule,
+    SubMessModule,
   ],
   controllers: [],
   providers: [],
