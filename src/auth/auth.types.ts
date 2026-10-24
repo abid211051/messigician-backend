@@ -15,7 +15,7 @@ export interface IUser {
   id: string;
   email?: string;
   role?: SystemRole;
-  mess_id?: string | null;
+  mess_id: string | null;
   mess_role?: MessRole;
   ban?: boolean | null;
   ban_reason?: string | null;
