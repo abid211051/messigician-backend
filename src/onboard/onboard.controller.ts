@@ -14,8 +14,8 @@ import type { Request, Response } from 'express';
 
 import { OnboardService } from './onboard.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { uploadSingle } from '../core/file-upload/upload.decorator.js';
-import { ZodValidationPipe } from '../core/pipes/zod-validation.pipe.js';
+import { uploadSingle } from '../common/file-upload/upload.decorator.js';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 
 import {
   createMessSchema,

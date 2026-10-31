@@ -5,7 +5,7 @@ import {
   ALLOWABLE_DOC_FORMAT,
   ALLOWABLE_IMAGE_FORMAT,
   MAX_UPLOAD_SIZE,
-} from '../core.constant.js';
+} from '../common.constant.js';
 import { randomUUID } from 'node:crypto';
 
 const allowedFormats: readonly string[] = [

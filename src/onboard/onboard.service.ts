@@ -7,7 +7,7 @@ import {
 import { Prisma } from '../../generated/prisma/client.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CloudinaryService } from '../core/cloudinary/cloudinary.service.js';
+import { CloudinaryService } from '../common/cloudinary/cloudinary.service.js';
 
 @Injectable()
 export class OnboardService {

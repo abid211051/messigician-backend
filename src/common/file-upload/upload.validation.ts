@@ -6,7 +6,7 @@ import {
   ALLOWED_TOTAL_FILES,
   MAX_IMAGE_SIZE,
   MAX_UPLOAD_SIZE,
-} from '../core.constant.js';
+} from '../common.constant.js';
 
 export const imageFileSchema = z.object({
   mimetype: z.enum(ALLOWABLE_IMAGE_FORMAT, {

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,30 +8,33 @@ import type {
   CreateSubMessBodyDto,
   GetAllSubMessQueryDto,
 } from './sub-mess.dto.js';
-import { PrismaService } from '../../../prisma/prisma.service.js';
+
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CommonUtils } from '../../common/common.utils.js';
 
 @Injectable()
 export class SubMessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly commonUtils: CommonUtils,
+  ) {}
 
-  async getAll(ownerMessId: string | null, query: GetAllSubMessQueryDto) {
-    if (!ownerMessId) {
-      throw new ForbiddenException('You do not belong to a mess');
-    }
-
+  async getAll(
+    ownerMessId: string | null | undefined,
+    query: GetAllSubMessQueryDto,
+  ) {
+    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
     const { page, limit, search, sortBy, sortOrder } = query;
 
     const where = {
-      mess_id: ownerMessId,
+      mess_id: messId,
       ...(search
         ? { fname: { contains: search, mode: 'insensitive' as const } }
         : {}),
     };
 
     const totalItems = await this.prisma.sub_mess.count({ where });
-
-    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
-    const currentPage = Math.min(page, totalPages);
+    const pagination = this.commonUtils.getPagination(page, limit, totalItems);
 
     const orderBy =
       sortBy === 'created_at'
@@ -44,8 +46,8 @@ export class SubMessService {
     const rows = totalItems
       ? await this.prisma.sub_mess.findMany({
           where,
-          skip: (currentPage - 1) * limit,
-          take: limit,
+          skip: pagination.skip,
+          take: pagination.take,
           orderBy,
           select: {
             id: true,
@@ -78,10 +80,7 @@ export class SubMessService {
     return {
       data,
       meta: {
-        totalItems,
-        totalPages,
-        currentPage,
-        itemsPerPage: limit,
+        ...pagination.meta,
         search,
         sortBy,
         sortOrder,
@@ -89,15 +88,13 @@ export class SubMessService {
     };
   }
 
-  async getOne(ownerMessId: string | null, id: string) {
-    if (!ownerMessId) {
-      throw new ForbiddenException('You do not belong to a mess');
-    }
+  async getOne(ownerMessId: string | null | undefined, id: string) {
+    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
 
     const row = await this.prisma.sub_mess.findFirst({
       where: {
         id,
-        mess_id: ownerMessId,
+        mess_id: messId,
       },
       select: {
         id: true,
@@ -131,15 +128,16 @@ export class SubMessService {
     };
   }
 
-  async create(ownerMessId: string | null, body: CreateSubMessBodyDto) {
-    if (!ownerMessId) {
-      throw new ForbiddenException('You do not belong to a mess');
-    }
+  async create(
+    ownerMessId: string | null | undefined,
+    body: CreateSubMessBodyDto,
+  ) {
+    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
 
     await this.prisma.$transaction(async (tx) => {
       const subMess = await tx.sub_mess.create({
         data: {
-          mess_id: ownerMessId,
+          mess_id: messId,
           fname: body.fname,
         },
         select: { id: true },
@@ -161,15 +159,13 @@ export class SubMessService {
     return { message: 'Sub-mess created successfully' };
   }
 
-  async deleteOne(ownerMessId: string | null, id: string) {
-    if (!ownerMessId) {
-      throw new ForbiddenException('You do not belong to a mess');
-    }
+  async deleteOne(ownerMessId: string | null | undefined, id: string) {
+    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
 
     const result = await this.prisma.sub_mess.deleteMany({
       where: {
         id,
-        mess_id: ownerMessId,
+        mess_id: messId,
       },
     });
 
@@ -180,18 +176,15 @@ export class SubMessService {
     return { message: 'Sub-mess deleted successfully' };
   }
 
-  async deleteMany(ownerMessId: string | null, ids: string[]) {
-    if (!ownerMessId) {
-      throw new ForbiddenException('You do not belong to a mess');
-    }
+  async deleteMany(ownerMessId: string | null | undefined, ids: string[]) {
+    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
+    const uniqueIds = [...new Set(ids)];
 
     return this.prisma.$transaction(async (tx) => {
-      const uniqueIds = [...new Set(ids)];
-
       const found = await tx.sub_mess.findMany({
         where: {
           id: { in: uniqueIds },
-          mess_id: ownerMessId,
+          mess_id: messId,
         },
         select: { id: true },
       });
@@ -205,7 +198,7 @@ export class SubMessService {
       await tx.sub_mess.deleteMany({
         where: {
           id: { in: uniqueIds },
-          mess_id: ownerMessId,
+          mess_id: messId,
         },
       });
 

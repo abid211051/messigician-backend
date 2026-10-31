@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { readFile, unlink } from 'node:fs/promises';
 import { v2 as cloudinary } from 'cloudinary';
 
-import { CLOUDINARY_FOLDER } from '../core.constant.js';
-import { CloudinaryImage } from '../core.types.js';
+import { CLOUDINARY_FOLDER } from '../common.constant.js';
+import { CloudinaryImage } from '../common.types.js';
 
 @Injectable()
 export class CloudinaryService {

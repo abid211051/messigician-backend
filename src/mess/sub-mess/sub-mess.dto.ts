@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PER_PAGE_ITEMS } from '../../../core/core.constant.js';
+import { PER_PAGE_ITEMS } from '../../common/common.constant.js';
 
 const SORT_FIELDS = ['created_at', 'total_rent', 'no_of_members'] as const;
 
