@@ -14,7 +14,7 @@ import type { IGoogleUserPayload } from '../auth.types.js';
 export class MessRoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const allowedRoles = this.reflector.getAllAndOverride<string[]>(
       MESS_ROLE_KEY,
       [context.getHandler(), context.getClass()],
@@ -34,7 +34,11 @@ export class MessRoleGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    if (!allowedRoles.includes(user.mess_role ?? '')) {
+    if (
+      !user.mess_id ||
+      !user.mess_role ||
+      !allowedRoles.includes(user.mess_role)
+    ) {
       throw new ForbiddenException('Forbidden');
     }
 

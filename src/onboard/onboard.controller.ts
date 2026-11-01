@@ -10,7 +10,7 @@ import {
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 
 import { OnboardService } from './onboard.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';

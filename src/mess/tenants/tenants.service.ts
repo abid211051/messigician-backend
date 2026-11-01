@@ -1,13 +1,5 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-
-import type {
-  AllSubMessMembersQueryDto,
-  EditSubMessMemberBodyDto,
-} from './tenants.dto.js';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { AllSubMessMembersQueryDto, EditSubMessMemberBodyDto } from './tenants.dto.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CommonUtils } from '../../common/common.utils.js';
 import { PER_PAGE_ITEMS } from '../../common/common.constant.js';
@@ -21,241 +13,87 @@ export class TenantsService {
 
   async getAllSubMess(ownerMessId: string | null | undefined) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-
     const rows = await this.prisma.sub_mess.findMany({
       where: { mess_id: messId },
       orderBy: { created_at: 'desc' },
-      select: {
-        id: true,
-        fname: true,
-      },
+      select: { id: true, name: true },
     });
-
-    return rows.map(({ id, fname }) => ({
-      id,
-      sub_mess_name: fname,
-    }));
+    return rows.map(({ id, name }) => ({ id, sub_mess_name: name }));
   }
 
-  async getAllMembers(
-    ownerMessId: string | null | undefined,
-    query: AllSubMessMembersQueryDto,
-  ) {
+  async getAllMembers(ownerMessId: string | null | undefined, query: AllSubMessMembersQueryDto) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    const { page, sub_mess_ids: subMessIds } = query;
-
     const where = {
-      sub_mess: {
-        is: { mess_id: messId },
-      },
-      ...(subMessIds.length > 0 ? { sub_mess_id: { in: subMessIds } } : {}),
+      mess_id: messId,
+      status: 'active' as const,
+      ...(query.sub_mess_ids.length ? { sub_mess_id: { in: query.sub_mess_ids } } : {}),
     };
-
-    const totalItems = await this.prisma.sub_mess_members.count({ where });
-    const pagination = this.commonUtils.getPagination(
-      page,
-      PER_PAGE_ITEMS,
-      totalItems,
-    );
-
+    const totalItems = await this.prisma.memberships.count({ where });
+    const pagination = this.commonUtils.getPagination(query.page, PER_PAGE_ITEMS, totalItems);
     const rows = totalItems
-      ? await this.prisma.sub_mess_members.findMany({
+      ? await this.prisma.memberships.findMany({
           where,
           skip: pagination.skip,
           take: pagination.take,
-          orderBy: { created_at: 'desc' },
+          orderBy: { joined_at: 'desc' },
           include: {
-            sub_mess: {
-              select: { fname: true },
-            },
-            users: {
-              include: {
-                profiles: {
-                  select: {
-                    fname: true,
-                    images: true,
-                    phone: true,
-                  },
-                },
-              },
-            },
+            sub_mess: { select: { name: true } },
+            users: { include: { profiles: { select: { fname: true, images: true, phone: true } } } },
           },
         })
       : [];
-
-    const data = rows.map((row) => {
-      const {
-        sub_mess,
-        users,
-        monthly_rent,
-        total_due,
-        total_paid,
-        ...membership
-      } = row;
-
-      const profile = users.profiles;
-
-      return {
-        ...membership,
-        monthly_rent: monthly_rent === null ? null : Number(monthly_rent),
-        total_due: total_due === null ? null : Number(total_due),
-        total_paid: total_paid === null ? null : Number(total_paid),
-        sub_mess_name: sub_mess.fname,
-        tenant_name: profile?.fname ?? null,
-        images: profile?.images ?? null,
-        phone: profile?.phone ?? null,
-        email: users.email,
-      };
-    });
-
     return {
-      data,
+      data: rows.map((row) => ({
+        id: row.id,
+        user_id: row.user_id,
+        sub_mess_id: row.sub_mess_id,
+        role: row.role,
+        monthly_rent: row.monthly_rent === null ? null : Number(row.monthly_rent),
+        sub_mess_name: row.sub_mess?.name ?? null,
+        tenant_name: row.users.profiles?.fname ?? null,
+        images: row.users.profiles?.images ?? null,
+        phone: row.users.profiles?.phone ?? null,
+        email: row.users.email,
+      })),
       meta: pagination.meta,
     };
   }
 
   async deleteSingle(ownerMessId: string | null | undefined, id: string) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-
-    return this.prisma.$transaction(async (tx) => {
-      const member = await tx.sub_mess_members.findFirst({
-        where: {
-          id,
-          sub_mess: { is: { mess_id: messId } },
-        },
-        select: {
-          id: true,
-          user_id: true,
-        },
-      });
-
-      if (!member) {
-        throw new NotFoundException('Member not found');
-      }
-
-      const deleted = await tx.sub_mess_members.deleteMany({
-        where: {
-          id: member.id,
-          sub_mess: { is: { mess_id: messId } },
-        },
-      });
-
-      if (deleted.count === 0) {
-        throw new NotFoundException('Member not found');
-      }
-
-      await tx.users.updateMany({
-        where: {
-          id: member.user_id,
-          mess_id: messId,
-        },
-        data: {
-          mess_id: null,
-          mess_role: null,
-        },
-      });
-
-      return { message: 'Member deleted successfully' };
+    const member = await this.prisma.memberships.findFirst({
+      where: { id, mess_id: messId, role: { not: 'owner' }, status: 'active' },
+      select: { id: true },
     });
+    if (!member) throw new NotFoundException('Member not found');
+    await this.prisma.memberships.update({ where: { id }, data: { status: 'removed', left_at: new Date() } });
+    return { message: 'Member deleted successfully' };
   }
 
   async deleteBulk(ownerMessId: string | null | undefined, ids: string[]) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    const uniqueIds = [...new Set(ids)];
-
-    return this.prisma.$transaction(async (tx) => {
-      const members = await tx.sub_mess_members.findMany({
-        where: {
-          id: { in: uniqueIds },
-          sub_mess: { is: { mess_id: messId } },
-        },
-        select: {
-          id: true,
-          user_id: true,
-        },
-      });
-
-      if (members.length === 0) {
-        throw new NotFoundException('No members found to delete');
-      }
-
-      const memberIds = members.map(({ id }) => id);
-      const userIds = [...new Set(members.map(({ user_id }) => user_id))];
-
-      await tx.sub_mess_members.deleteMany({
-        where: {
-          id: { in: memberIds },
-          sub_mess: { is: { mess_id: messId } },
-        },
-      });
-
-      await tx.users.updateMany({
-        where: {
-          id: { in: userIds },
-          mess_id: messId,
-        },
-        data: {
-          mess_id: null,
-          mess_role: null,
-        },
-      });
-
-      return { message: 'Members deleted successfully' };
+    const result = await this.prisma.memberships.updateMany({
+      where: { id: { in: [...new Set(ids)] }, mess_id: messId, role: { not: 'owner' }, status: 'active' },
+      data: { status: 'removed', left_at: new Date() },
     });
+    if (!result.count) throw new NotFoundException('No members found to delete');
+    return { message: 'Members deleted successfully' };
   }
 
-  async edit(
-    ownerMessId: string | null | undefined,
-    id: string,
-    body: EditSubMessMemberBodyDto,
-  ) {
+  async edit(ownerMessId: string | null | undefined, id: string, body: EditSubMessMemberBodyDto) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-
-    return this.prisma.$transaction(async (tx) => {
-      const member = await tx.sub_mess_members.findFirst({
-        where: {
-          id,
-          sub_mess: { is: { mess_id: messId } },
-        },
-        select: { id: true },
-      });
-
-      if (!member) {
-        throw new NotFoundException('Member not found');
-      }
-
-      if (body.sub_mess_id !== undefined) {
-        const targetSubMess = await tx.sub_mess.findFirst({
-          where: {
-            id: body.sub_mess_id,
-            mess_id: messId,
-          },
-          select: { id: true },
-        });
-
-        if (!targetSubMess) {
-          throw new BadRequestException(
-            'Sub-mess does not belong to your mess',
-          );
-        }
-      }
-
-      await tx.sub_mess_members.update({
-        where: { id: member.id },
-        data: {
-          ...(body.sub_mess_id !== undefined && {
-            sub_mess_id: body.sub_mess_id,
-          }),
-          ...(body.monthly_rent !== undefined && {
-            monthly_rent: body.monthly_rent,
-          }),
-          ...(body.total_due !== undefined && {
-            total_due: body.total_due,
-          }),
-        },
-      });
-
-      return { message: 'Members Edited successfully' };
+    if (body.sub_mess_id !== undefined) {
+      const target = await this.prisma.sub_mess.findFirst({ where: { id: body.sub_mess_id, mess_id: messId }, select: { id: true } });
+      if (!target) throw new BadRequestException('Sub-mess does not belong to your mess');
+    }
+    const result = await this.prisma.memberships.updateMany({
+      where: { id, mess_id: messId, role: { not: 'owner' }, status: 'active' },
+      data: {
+        ...(body.sub_mess_id !== undefined ? { sub_mess_id: body.sub_mess_id } : {}),
+        ...(body.monthly_rent !== undefined ? { monthly_rent: body.monthly_rent } : {}),
+      },
     });
+    if (!result.count) throw new NotFoundException('Member not found');
+    return { message: 'Members Edited successfully' };
   }
 }

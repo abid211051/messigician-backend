@@ -62,14 +62,20 @@ export class AuthService {
         update: {},
       });
 
+      const membership = await tx.memberships.findFirst({
+        where: { user_id: user.id, status: 'active' },
+        orderBy: { joined_at: 'asc' },
+        select: { mess_id: true, sub_mess_id: true, role: true },
+      });
+
       return {
         id: user.id,
         email: user.email,
         role: user.role,
-        mess_id: user.mess_id,
-        mess_role: user.mess_role,
+        mess_id: membership?.mess_id ?? null,
+        mess_role: membership?.role ?? null,
         ban: user.ban,
-        sub_mess_id: user.sub_mess_id,
+        sub_mess_id: membership?.sub_mess_id ?? null,
       };
     });
   }
@@ -112,24 +118,15 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token');
       }
 
-      const user = await this.prisma.users.findUnique({
-        where: { id: payload.sub },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          mess_id: true,
-          mess_role: true,
-          ban: true,
-          sub_mess_id: true,
-        },
-      });
-
-      if (!user || user.ban) {
-        throw new UnauthorizedException('Invalid or unauthorized user');
-      }
-
-      return user;
+      return {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        mess_id: payload.mess_id ?? null,
+        mess_role: payload.mess_role ?? null,
+        ban: payload.ban ?? false,
+        sub_mess_id: payload.sub_mess_id ?? null,
+      };
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
@@ -168,11 +165,20 @@ export class AuthService {
         id: storedToken.users.id,
         email: storedToken.users.email,
         role: storedToken.users.role,
-        mess_id: storedToken.users.mess_id,
-        mess_role: storedToken.users.mess_role,
+        mess_id: null,
+        mess_role: null,
         ban: storedToken.users.ban,
-        sub_mess_id: storedToken.users.sub_mess_id,
+        sub_mess_id: null,
       };
+
+      const membership = await this.prisma.memberships.findFirst({
+        where: { user_id: user.id, status: 'active' },
+        orderBy: { joined_at: 'asc' },
+        select: { mess_id: true, sub_mess_id: true, role: true },
+      });
+      user.mess_id = membership?.mess_id ?? null;
+      user.mess_role = membership?.role ?? null;
+      user.sub_mess_id = membership?.sub_mess_id ?? null;
 
       const accessToken = await this.generateAccessToken(user);
 
@@ -183,13 +189,12 @@ export class AuthService {
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<void> {
-    const res = await this.prisma.refresh_tokens.updateMany({
+    await this.prisma.refresh_tokens.updateMany({
       where: {
         token_hash: this.hashToken(refreshToken),
         revoked_at: null,
       },
       data: { revoked_at: new Date() },
     });
-    console.log(res);
   }
 }

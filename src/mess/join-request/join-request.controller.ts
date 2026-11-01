@@ -42,6 +42,7 @@ export class JoinRequestController {
       messId: req.user.mess_id,
       requestId: body.request_id,
       subMessId: body.sub_mess_id,
+      decidedBy: req.user.id,
     });
   }
 
