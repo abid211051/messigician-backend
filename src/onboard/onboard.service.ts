@@ -35,12 +35,12 @@ export class OnboardService {
       throw new NotFoundException('User not found');
     }
 
-    const membership = await this.prisma.memberships.findFirst({
-      where: { user_id: userId, status: 'active' },
-      select: { id: true },
+    const userWithMembership = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { mess_id: true },
     });
 
-    if (membership) {
+    if (userWithMembership?.mess_id) {
       throw new ConflictException('User already in a mess');
     }
 
@@ -67,12 +67,12 @@ export class OnboardService {
             throw new NotFoundException('User not found');
           }
 
-          const currentMembership = await tx.memberships.findFirst({
-            where: { user_id: userId, status: 'active' },
-            select: { id: true },
+          const currentUserState = await tx.users.findUniqueOrThrow({
+            where: { id: userId },
+            select: { mess_id: true },
           });
 
-          if (currentMembership) {
+          if (currentUserState.mess_id) {
             throw new ConflictException('User already in a mess');
           }
 
@@ -97,11 +97,12 @@ export class OnboardService {
             select: { id: true, email: true, role: true, ban: true },
           });
 
-          await tx.memberships.create({
+          await tx.users.update({
+            where: { id: userId },
             data: {
-              user_id: userId,
               mess_id: mess.id,
-              role: 'owner',
+              mess_role: 'owner',
+              sub_mess_id: null,
             },
           });
 
@@ -153,19 +154,14 @@ export class OnboardService {
       async (tx) => {
         const user = await tx.users.findUnique({
           where: { id: userId },
-          select: { id: true },
+          select: { id: true, mess_id: true },
         });
 
         if (!user) {
           throw new NotFoundException('User not found');
         }
 
-        const membership = await tx.memberships.findFirst({
-          where: { user_id: userId, status: 'active' },
-          select: { id: true },
-        });
-
-        if (membership) {
+        if (user.mess_id) {
           throw new ConflictException('You are already in a hostel mess');
         }
 

@@ -39,7 +39,6 @@ export class JoinRequestService {
     messId: string | null | undefined;
     requestId: string;
     subMessId: string;
-    decidedBy: string;
   }) {
     const messId = this.commonUtils.requireOwnerMessId(input.messId);
     return this.prisma.$transaction(async (tx) => {
@@ -49,12 +48,12 @@ export class JoinRequestService {
       });
       if (!request) throw new NotFoundException('Join request not found');
 
-      const current = await tx.memberships.findFirst({
-        where: { user_id: request.user_id, status: 'active' },
-        select: { id: true },
+      const current = await tx.users.findUnique({
+        where: { id: request.user_id },
+        select: { mess_id: true },
       });
-      if (current) {
-        await tx.join_requests.update({ where: { id: request.id }, data: { status: 'cancelled' } });
+      if (current?.mess_id) {
+        await tx.join_requests.delete({ where: { id: request.id } });
         return { message: 'User already belongs to a mess — request cancelled' };
       }
 
@@ -64,26 +63,23 @@ export class JoinRequestService {
       });
       if (!subMess) throw new BadRequestException('The sub-mess does not belong to this mess');
 
-      await tx.memberships.create({
-        data: { user_id: request.user_id, mess_id: messId, sub_mess_id: subMess.id, role: 'member' },
-      });
-      await tx.join_requests.update({
-        where: { id: request.id },
+      await tx.users.update({
+        where: { id: request.user_id },
         data: {
-          status: 'approved',
-          decided_by: input.decidedBy,
-          decided_at: new Date(),
+          mess_id: messId,
+          sub_mess_id: subMess.id,
+          mess_role: 'member',
         },
       });
+      await tx.join_requests.delete({ where: { id: request.id } });
       return { message: 'User added successfully' };
     });
   }
 
   async reject(ownerMessId: string | null | undefined, requestId: string) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    const result = await this.prisma.join_requests.updateMany({
+    const result = await this.prisma.join_requests.deleteMany({
       where: { id: requestId, mess_id: messId, status: 'pending' },
-      data: { status: 'rejected', decided_at: new Date() },
     });
     if (!result.count) throw new NotFoundException('Join request not found');
     return { message: 'Join request rejected' };

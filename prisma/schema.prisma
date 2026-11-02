@@ -19,12 +19,6 @@ enum mess_role {
   member
 }
 
-enum membership_status {
-  active
-  left
-  removed
-}
-
 enum join_request_status {
   pending
   approved
@@ -33,18 +27,23 @@ enum join_request_status {
 }
 
 model users {
-  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String         @unique
-  role             user_role      @default(user)
-  ban              Boolean        @default(false)
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String           @unique
+  role             user_role        @default(user)
+  ban              Boolean          @default(false)
   ban_reason       String?
-  created_at       DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  mess_id          String?          @db.Uuid
+  sub_mess_id      String?          @db.Uuid
+  mess_role        mess_role?
+  monthly_rent     Decimal?         @db.Decimal(10, 2)
   profiles         profiles?
   refresh_tokens   refresh_tokens[]
-  memberships      memberships[]
-  join_requests    join_requests[] @relation("requester")
-  decided_requests join_requests[] @relation("decider")
+  join_requests    join_requests[]  @relation("requester")
+  decided_requests join_requests[]  @relation("decider")
+  mess             mess?            @relation(fields: [mess_id], references: [id], onUpdate: NoAction)
+  sub_mess         sub_mess?        @relation(fields: [sub_mess_id, mess_id], references: [id, mess_id], onUpdate: NoAction)
 }
 
 model profiles {
@@ -58,13 +57,13 @@ model profiles {
 }
 
 model refresh_tokens {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @db.Uuid
-  token_hash String   @unique
-  expires_at DateTime @db.Timestamptz(6)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
   revoked_at DateTime? @db.Timestamptz(6)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
 }
@@ -76,7 +75,7 @@ model mess {
   join_code     String          @unique
   created_at    DateTime        @default(now()) @db.Timestamptz(6)
   sub_mess      sub_mess[]
-  memberships  memberships[]
+  users         users[]
   join_requests join_requests[]
 }
 
@@ -89,30 +88,11 @@ model sub_mess {
   no_of_seats   Int             @default(1)
   created_at    DateTime        @default(now()) @db.Timestamptz(6)
   mess          mess            @relation(fields: [mess_id], references: [id], onDelete: Cascade)
-  memberships   memberships[]
+  users         users[]
   join_requests join_requests[]
 
   @@unique([id, mess_id])
   @@index([mess_id])
-}
-
-model memberships {
-  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id      String            @db.Uuid
-  mess_id      String            @db.Uuid
-  sub_mess_id  String?           @db.Uuid
-  role         mess_role
-  status       membership_status @default(active)
-  monthly_rent Decimal?          @db.Decimal(10, 2)
-  joined_at    DateTime          @default(now()) @db.Timestamptz(6)
-  left_at      DateTime?
-  updated_at   DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
-  users        users             @relation(fields: [user_id], references: [id], onDelete: Restrict)
-  mess         mess              @relation(fields: [mess_id], references: [id], onDelete: Cascade)
-  sub_mess     sub_mess?         @relation(fields: [sub_mess_id], references: [id], onDelete: Restrict)
-
-  @@index([user_id])
-  @@index([mess_id, sub_mess_id, status])
 }
 
 model join_requests {
@@ -129,6 +109,6 @@ model join_requests {
   mess        mess                @relation(fields: [mess_id], references: [id], onDelete: Cascade)
   sub_mess    sub_mess            @relation(fields: [sub_mess_id, mess_id], references: [id, mess_id], onDelete: Cascade)
 
+  @@unique([user_id, mess_id, sub_mess_id])
   @@index([mess_id, status])
-  @@index([user_id])
 }

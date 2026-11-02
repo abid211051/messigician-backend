@@ -29,7 +29,7 @@ export class SubMessService {
     const orderBy =
       sortBy === 'created_at' ? { created_at: sortOrder } :
       sortBy === 'total_rent' ? { total_rent: sortOrder } :
-      { memberships: { _count: sortOrder } };
+      { users: { _count: sortOrder } };
     const rows = totalItems
       ? await this.prisma.sub_mess.findMany({
           where,
@@ -43,7 +43,7 @@ export class SubMessService {
             total_utility: true,
             no_of_seats: true,
             created_at: true,
-            _count: { select: { memberships: true } },
+            _count: { select: { users: true } },
           },
         })
       : [];
@@ -56,7 +56,7 @@ export class SubMessService {
         total_rent: row.total_rent,
         total_utility: row.total_utility,
         no_of_seats: row.no_of_seats,
-        no_of_members: row._count.memberships,
+        no_of_members: row._count.users,
       })),
       meta: { ...pagination.meta, search, sortBy, sortOrder },
     };
@@ -73,7 +73,7 @@ export class SubMessService {
         total_utility: true,
         no_of_seats: true,
         created_at: true,
-        _count: { select: { memberships: true } },
+        _count: { select: { users: true } },
       },
     });
     if (!row) throw new NotFoundException('Sub-mess not found');
@@ -84,7 +84,7 @@ export class SubMessService {
       total_rent: row.total_rent,
       total_utility: row.total_utility,
       no_of_seats: row.no_of_seats,
-      no_of_members: row._count.memberships,
+      no_of_members: row._count.users,
     };
   }
 
