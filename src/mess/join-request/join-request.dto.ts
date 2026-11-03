@@ -2,9 +2,8 @@ import { z } from 'zod';
 
 export const joinRequestAcceptSchema = z.object({
   body: z.object({
-    request_id: z.uuid({ error: 'Invalid request_id' }),
-    user_id: z.uuid({ error: 'Invalid user_id' }),
-    sub_mess_id: z.uuid({ error: 'Invalid sub_mess_id' }),
+    request_id: z.string().uuid(),
+    sub_mess_id: z.string().uuid(),
   }),
 });
 

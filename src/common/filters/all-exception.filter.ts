@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client.js';
 import type { Response } from 'express';
-import { ErrorDetail, ErrorResponse } from '../core.types.js';
+import { ErrorDetail, ErrorResponse } from '../common.types.js';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

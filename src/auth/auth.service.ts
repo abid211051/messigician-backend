@@ -112,24 +112,15 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token');
       }
 
-      const user = await this.prisma.users.findUnique({
-        where: { id: payload.sub },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          mess_id: true,
-          mess_role: true,
-          ban: true,
-          sub_mess_id: true,
-        },
-      });
-
-      if (!user || user.ban) {
-        throw new UnauthorizedException('Invalid or unauthorized user');
-      }
-
-      return user;
+      return {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        mess_id: payload.mess_id ?? null,
+        mess_role: payload.mess_role ?? null,
+        ban: payload.ban ?? false,
+        sub_mess_id: payload.sub_mess_id ?? null,
+      };
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
@@ -183,13 +174,12 @@ export class AuthService {
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<void> {
-    const res = await this.prisma.refresh_tokens.updateMany({
+    await this.prisma.refresh_tokens.updateMany({
       where: {
         token_hash: this.hashToken(refreshToken),
         revoked_at: null,
       },
       data: { revoked_at: new Date() },
     });
-    console.log(res);
   }
 }

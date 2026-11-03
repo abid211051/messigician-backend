@@ -4,10 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { Prisma } from '../../generated/prisma/client.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CloudinaryService } from '../core/cloudinary/cloudinary.service.js';
+import { CloudinaryService } from '../common/cloudinary/cloudinary.service.js';
 
 @Injectable()
 export class OnboardService {
@@ -27,14 +28,19 @@ export class OnboardService {
 
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
-      select: { mess_id: true },
+      select: { id: true },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (user.mess_id !== null) {
+    const userWithMembership = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { mess_id: true },
+    });
+
+    if (userWithMembership?.mess_id) {
       throw new ConflictException('User already in a mess');
     }
 
@@ -54,57 +60,58 @@ export class OnboardService {
         async (tx) => {
           const currentUser = await tx.users.findUnique({
             where: { id: userId },
-            select: { mess_id: true },
+            select: { id: true },
           });
 
           if (!currentUser) {
             throw new NotFoundException('User not found');
           }
 
-          if (currentUser.mess_id !== null) {
+          const currentUserState = await tx.users.findUniqueOrThrow({
+            where: { id: userId },
+            select: { mess_id: true },
+          });
+
+          if (currentUserState.mess_id) {
             throw new ConflictException('User already in a mess');
           }
 
           const mess = await tx.mess.create({
             data: {
-              fname,
+              name: fname,
+              join_code: randomBytes(6).toString('hex'),
               images,
             },
             select: { id: true },
           });
 
-          const subMess = await tx.sub_mess.create({
+          await tx.sub_mess.create({
             data: {
               mess_id: mess.id,
-              fname: 'Block-1',
+              name: 'Block-1',
             },
-            select: { id: true },
           });
 
-          const updatedUser = await tx.users.update({
+          const updatedUser = await tx.users.findUniqueOrThrow({
+            where: { id: userId },
+            select: { id: true, email: true, role: true, ban: true },
+          });
+
+          await tx.users.update({
             where: { id: userId },
             data: {
               mess_id: mess.id,
               mess_role: 'owner',
-            },
-            select: {
-              id: true,
-              email: true,
-              mess_id: true,
-              mess_role: true,
+              sub_mess_id: null,
             },
           });
 
-          await tx.sub_mess_managers.create({
-            data: {
-              user_id: userId,
-              mess_id: mess.id,
-              sub_mess_id: subMess.id,
-              is_owner: true,
-            },
-          });
-
-          return updatedUser;
+          return {
+            ...updatedUser,
+            mess_id: mess.id,
+            mess_role: 'owner' as const,
+            sub_mess_id: null,
+          };
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -124,7 +131,7 @@ export class OnboardService {
       where: { mess_id: messId },
       select: {
         id: true,
-        fname: true,
+        name: true,
         mess_id: true,
       },
     });
@@ -147,18 +154,27 @@ export class OnboardService {
       async (tx) => {
         const user = await tx.users.findUnique({
           where: { id: userId },
-          select: { mess_id: true },
+          select: { id: true, mess_id: true },
         });
 
         if (!user) {
           throw new NotFoundException('User not found');
         }
 
-        if (user.mess_id !== null) {
+        if (user.mess_id) {
           throw new ConflictException('You are already in a hostel mess');
         }
 
-        return tx.users_join_request.create({
+        const subMess = await tx.sub_mess.findFirst({
+          where: { id: subMessId, mess_id: messId },
+          select: { id: true },
+        });
+
+        if (!subMess) {
+          throw new NotFoundException('Mess or sub-mess not found');
+        }
+
+        return tx.join_requests.create({
           data: {
             user_id: userId,
             mess_id: messId,

@@ -9,7 +9,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
 
 import { SubMessService } from './sub-mess.service.js';
 import {
@@ -26,10 +25,10 @@ import type {
   GetAllSubMessQueryDto,
   GetSingleSubMessParamsDto,
 } from './sub-mess.dto.js';
-import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard.js';
-import { MessRoleGuard } from '../../../auth/guards/mess-role.guard.js';
-import { MessRole } from '../../../auth/decorators/mess-role.decorator.js';
-import type { IAuthReq } from '../../../auth/auth.types.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
+import { MessRoleGuard } from '../../auth/guards/mess-role.guard.js';
+import { MessRole } from '../../auth/decorators/mess-role.decorator.js';
+import type { IAuthReq } from '../../auth/auth.types.js';
 
 @Controller('sub-mess')
 @UseGuards(JwtAuthGuard, MessRoleGuard)

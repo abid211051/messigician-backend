@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { imageFileSchema } from '../core/file-upload/upload.validation.js';
+import { imageFileSchema } from '../common/file-upload/upload.validation.js';
 
 export const createMessSchema = z.object({
   body: z.object({

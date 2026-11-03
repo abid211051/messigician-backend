@@ -1,6 +1,10 @@
-// prisma.config.ts
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { defineConfig } from 'prisma/config';
+
+const envFile =
+  process.env['NODE_ENV'] === 'production' ? '.env.prod' : '.env.local';
+
+dotenv.config({ path: envFile, override: true });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -8,6 +12,6 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: process.env['DATABASE_URL'], // Node will inject this natively
+    url: process.env['DATABASE_URL']!,
   },
 });
