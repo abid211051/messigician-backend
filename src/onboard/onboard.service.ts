@@ -103,6 +103,8 @@ export class OnboardService {
               mess_id: mess.id,
               mess_role: 'owner',
               sub_mess_id: null,
+              monthly_rent: null,
+              total_due: null,
             },
           });
 

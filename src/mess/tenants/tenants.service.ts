@@ -80,7 +80,13 @@ export class TenantsService {
         mess_id: messId,
         OR: [{ mess_role: 'member' }, { mess_role: 'manager' }],
       },
-      data: { mess_id: null, sub_mess_id: null, mess_role: null },
+      data: {
+        mess_id: null,
+        sub_mess_id: null,
+        mess_role: null,
+        monthly_rent: null,
+        total_due: null,
+      },
     });
     if (!result.count) throw new NotFoundException('Member not found');
     return { message: 'Member deleted successfully' };
@@ -94,7 +100,13 @@ export class TenantsService {
         mess_id: messId,
         OR: [{ mess_role: 'member' }, { mess_role: 'manager' }],
       },
-      data: { mess_id: null, sub_mess_id: null, mess_role: null },
+      data: {
+        mess_id: null,
+        sub_mess_id: null,
+        mess_role: null,
+        monthly_rent: null,
+        total_due: null,
+      },
     });
     if (!result.count) throw new NotFoundException('No members found to delete');
     return { message: 'Members deleted successfully' };

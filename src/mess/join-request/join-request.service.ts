@@ -69,6 +69,8 @@ export class JoinRequestService {
           mess_id: messId,
           sub_mess_id: subMess.id,
           mess_role: 'member',
+          monthly_rent: null,
+          total_due: null,
         },
       });
       await tx.join_requests.delete({ where: { id: request.id } });

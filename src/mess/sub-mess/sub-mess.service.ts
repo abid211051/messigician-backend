@@ -103,8 +103,32 @@ export class SubMessService {
 
   async deleteOne(ownerMessId: string | null | undefined, id: string) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    const result = await this.prisma.sub_mess.deleteMany({ where: { id, mess_id: messId } });
-    if (!result.count) throw new NotFoundException('Sub-mess not found or already deleted');
+    await this.prisma.$transaction(async (tx) => {
+      const subMess = await tx.sub_mess.findFirst({
+        where: { id, mess_id: messId },
+        select: { id: true },
+      });
+
+      if (!subMess) {
+        throw new NotFoundException('Sub-mess not found or already deleted');
+      }
+
+      await tx.users.updateMany({
+        where: { mess_id: messId, sub_mess_id: subMess.id },
+        data: {
+          mess_id: null,
+          sub_mess_id: null,
+          mess_role: null,
+          monthly_rent: null,
+          total_due: null,
+        },
+      });
+
+      await tx.sub_mess.delete({
+        where: { id: subMess.id },
+      });
+    });
+
     return { message: 'Sub-mess deleted successfully' };
   }
 
@@ -119,6 +143,21 @@ export class SubMessService {
       if (found.length !== uniqueIds.length) {
         throw new BadRequestException('One or more sub-messes were not found in your mess');
       }
+
+      await tx.users.updateMany({
+        where: {
+          mess_id: messId,
+          sub_mess_id: { in: uniqueIds },
+        },
+        data: {
+          mess_id: null,
+          sub_mess_id: null,
+          mess_role: null,
+          monthly_rent: null,
+          total_due: null,
+        },
+      });
+
       await tx.sub_mess.deleteMany({ where: { id: { in: uniqueIds }, mess_id: messId } });
       return { message: 'Sub-messes deleted successfully' };
     });
