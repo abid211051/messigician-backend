@@ -38,6 +38,7 @@ model users {
   sub_mess_id      String?          @db.Uuid
   mess_role        mess_role?
   monthly_rent     Decimal?         @db.Decimal(10, 2)
+  total_due        Decimal?         @db.Decimal(10, 2)
   profiles         profiles?
   refresh_tokens   refresh_tokens[]
   join_requests    join_requests[]  @relation("requester")

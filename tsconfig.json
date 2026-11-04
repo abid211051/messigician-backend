@@ -5,19 +5,48 @@
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
     "target": "ES2023",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": ".",
-    "incremental": true,
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": ["vitest/globals", "node"]
-  }
+    "types": ["vitest/globals", "node"],
+
+    /* 🔴 CRITICAL DEVELOPMENT OPTIMIZATIONS */
+    "incremental": true,
+    "sourceMap": false, // Turn off to stop generating bulky map files on save
+    "declaration": false, // Set to false; you do not need .d.ts files for local dev
+    "removeComments": true,
+
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  /* 🔴 ENSURE THESE ARE EXCLUSIVELY BLOCKED */
+  "exclude": ["node_modules", "dist", ".next"]
 }
+
+// {
+//   "compilerOptions": {
+//     "module": "nodenext",
+//     "moduleResolution": "nodenext",
+//     "resolvePackageJsonExports": true,
+//     "esModuleInterop": true,
+//     "isolatedModules": true,
+//     "declaration": true,
+//     "removeComments": true,
+//     "emitDecoratorMetadata": true,
+//     "experimentalDecorators": true,
+//     "allowSyntheticDefaultImports": true,
+//     "target": "ES2023",
+//     "sourceMap": true,
+//     "outDir": "./dist",
+//     "rootDir": ".",
+//     "incremental": true,
+//     "skipLibCheck": true,
+//     "strict": true,
+//     "strictPropertyInitialization": false,
+//     "types": ["vitest/globals", "node"]
+//   }
+// }

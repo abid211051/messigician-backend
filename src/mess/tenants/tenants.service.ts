@@ -62,6 +62,7 @@ export class TenantsService {
         sub_mess_name: row.sub_mess?.name ?? null,
         monthly_rent:
           row.monthly_rent === null ? null : Number(row.monthly_rent),
+        total_due: row.total_due === null ? null : Number(row.total_due),
         tenant_name: row.profiles?.fname ?? null,
         images: row.profiles?.images ?? null,
         phone: row.profiles?.phone ?? null,
@@ -115,10 +116,15 @@ export class TenantsService {
       }
     }
 
-    const data =
-      body.sub_mess_id !== undefined
+    const data = {
+      ...(body.sub_mess_id !== undefined
         ? { sub_mess_id: body.sub_mess_id }
-        : { monthly_rent: body.monthly_rent };
+        : {}),
+      ...(body.monthly_rent !== undefined
+        ? { monthly_rent: body.monthly_rent }
+        : {}),
+      ...(body.total_due !== undefined ? { total_due: body.total_due } : {}),
+    };
 
     const result = await this.prisma.users.updateMany({
       where: {
