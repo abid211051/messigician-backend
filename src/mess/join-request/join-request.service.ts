@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CommonUtils } from '../../common/common.utils.js';
+import { assertSubMessHasAvailableSeat } from '../../common/sub-mess.utils.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class JoinRequestService {
@@ -41,41 +43,57 @@ export class JoinRequestService {
     subMessId: string;
   }) {
     const messId = this.commonUtils.requireOwnerMessId(input.messId);
-    return this.prisma.$transaction(async (tx) => {
-      const request = await tx.join_requests.findFirst({
-        where: { id: input.requestId, mess_id: messId, status: 'pending', sub_mess_id: input.subMessId },
-        select: { id: true, user_id: true, sub_mess_id: true },
-      });
-      if (!request) throw new NotFoundException('Join request not found');
+    return this.prisma.$transaction(
+      async (tx) => {
+        const request = await tx.join_requests.findFirst({
+          where: {
+            id: input.requestId,
+            mess_id: messId,
+            status: 'pending',
+            sub_mess_id: input.subMessId,
+          },
+          select: { id: true, user_id: true, sub_mess_id: true },
+        });
+        if (!request) throw new NotFoundException('Join request not found');
 
-      const current = await tx.users.findUnique({
-        where: { id: request.user_id },
-        select: { mess_id: true },
-      });
-      if (current?.mess_id) {
+        const current = await tx.users.findUnique({
+          where: { id: request.user_id },
+          select: { mess_id: true },
+        });
+        if (current?.mess_id) {
+          await tx.join_requests.delete({ where: { id: request.id } });
+          return {
+            message: 'User already belongs to a mess — request cancelled',
+          };
+        }
+
+        const subMess = await tx.sub_mess.findFirst({
+          where: { id: request.sub_mess_id, mess_id: messId },
+          select: { id: true },
+        });
+        if (!subMess) {
+          throw new BadRequestException(
+            'The sub-mess does not belong to this mess',
+          );
+        }
+
+        await assertSubMessHasAvailableSeat(tx, messId, subMess.id);
+
+        await tx.users.update({
+          where: { id: request.user_id },
+          data: {
+            mess_id: messId,
+            sub_mess_id: subMess.id,
+            mess_role: 'member',
+            monthly_rent: null,
+            total_due: null,
+          },
+        });
         await tx.join_requests.delete({ where: { id: request.id } });
-        return { message: 'User already belongs to a mess — request cancelled' };
-      }
-
-      const subMess = await tx.sub_mess.findFirst({
-        where: { id: request.sub_mess_id, mess_id: messId },
-        select: { id: true },
-      });
-      if (!subMess) throw new BadRequestException('The sub-mess does not belong to this mess');
-
-      await tx.users.update({
-        where: { id: request.user_id },
-        data: {
-          mess_id: messId,
-          sub_mess_id: subMess.id,
-          mess_role: 'member',
-          monthly_rent: null,
-          total_due: null,
-        },
-      });
-      await tx.join_requests.delete({ where: { id: request.id } });
-      return { message: 'User added successfully' };
-    });
+        return { message: 'User added successfully' };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async reject(ownerMessId: string | null | undefined, requestId: string) {

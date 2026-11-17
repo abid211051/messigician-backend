@@ -24,32 +24,32 @@ export class SubMessService {
       mess_id: messId,
       ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
     };
-    const totalItems = await this.prisma.sub_mess.count({ where });
-    const pagination = this.commonUtils.getPagination(page, limit, totalItems);
     const orderBy =
       sortBy === 'created_at' ? { created_at: sortOrder } :
       sortBy === 'total_rent' ? { total_rent: sortOrder } :
       { users: { _count: sortOrder } };
-    const rows = totalItems
-      ? await this.prisma.sub_mess.findMany({
-          where,
-          skip: pagination.skip,
-          take: pagination.take,
-          orderBy,
-          select: {
-            id: true,
-            name: true,
-            total_rent: true,
-            total_utility: true,
-            no_of_seats: true,
-            created_at: true,
-            _count: { select: { users: true } },
-          },
-        })
-      : [];
-
-    return {
-      data: rows.map((row) => ({
+    const select = {
+      id: true,
+      name: true,
+      total_rent: true,
+      total_utility: true,
+      no_of_seats: true,
+      created_at: true,
+      _count: { select: { users: true } },
+    } as const;
+    const totalItems = await this.prisma.sub_mess.count({ where });
+    const pagination =
+      page !== undefined && limit !== undefined
+        ? this.commonUtils.getPagination(page, limit, totalItems)
+        : null;
+    const rows = await this.prisma.sub_mess.findMany({
+      where,
+      skip: pagination?.skip,
+      take: pagination?.take,
+      orderBy,
+      select,
+    });
+    const data = rows.map((row) => ({
         id: row.id,
         sub_mess_name: row.name,
         created_at: row.created_at,
@@ -57,8 +57,17 @@ export class SubMessService {
         total_utility: row.total_utility,
         no_of_seats: row.no_of_seats,
         no_of_members: row._count.users,
-      })),
-      meta: { ...pagination.meta, search, sortBy, sortOrder },
+        available_seats: Math.max(row.no_of_seats - row._count.users, 0),
+        is_full: row._count.users >= row.no_of_seats,
+      }));
+
+    if (page === undefined && limit === undefined) {
+      return data;
+    }
+
+    return {
+      data,
+      meta: { ...pagination!.meta, search, sortBy, sortOrder },
     };
   }
 
@@ -85,6 +94,8 @@ export class SubMessService {
       total_utility: row.total_utility,
       no_of_seats: row.no_of_seats,
       no_of_members: row._count.users,
+      available_seats: Math.max(row.no_of_seats - row._count.users, 0),
+      is_full: row._count.users >= row.no_of_seats,
     };
   }
 

@@ -34,11 +34,6 @@ import type { IAuthReq } from '../../auth/auth.types.js';
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
-  @Get('sub-mess/all')
-  getAllSubMess(@Req() req: IAuthReq) {
-    return this.tenantsService.getAllSubMess(req.user.mess_id);
-  }
-
   @Get()
   getAllMembers(
     @Req() req: IAuthReq,

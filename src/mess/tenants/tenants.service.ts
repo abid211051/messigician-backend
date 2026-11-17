@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '../../../generated/prisma/client.js';
 import type { AllSubMessMembersQueryDto, EditSubMessMemberBodyDto } from './tenants.dto.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CommonUtils } from '../../common/common.utils.js';
-import { PER_PAGE_ITEMS } from '../../common/common.constant.js';
+import { assertSubMessHasAvailableSeat } from '../../common/sub-mess.utils.js';
 
 @Injectable()
 export class TenantsService {
@@ -10,16 +11,6 @@ export class TenantsService {
     private readonly prisma: PrismaService,
     private readonly commonUtils: CommonUtils,
   ) {}
-
-  async getAllSubMess(ownerMessId: string | null | undefined) {
-    const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    const rows = await this.prisma.sub_mess.findMany({
-      where: { mess_id: messId },
-      orderBy: { created_at: 'desc' },
-      select: { id: true, name: true },
-    });
-    return rows.map(({ id, name }) => ({ id, sub_mess_name: name }));
-  }
 
   async getAllMembers(
     ownerMessId: string | null | undefined,
@@ -34,11 +25,7 @@ export class TenantsService {
         : {}),
     };
     const totalItems = await this.prisma.users.count({ where });
-    const pagination = this.commonUtils.getPagination(
-      query.page,
-      PER_PAGE_ITEMS,
-      totalItems,
-    );
+    const pagination = this.commonUtils.getPagination(query.page, query.limit, totalItems);
     const rows = await this.prisma.users.findMany({
       where,
       skip: pagination.skip,
@@ -118,16 +105,6 @@ export class TenantsService {
     body: EditSubMessMemberBodyDto,
   ) {
     const messId = this.commonUtils.requireOwnerMessId(ownerMessId);
-    if (body.sub_mess_id !== undefined) {
-      const target = await this.prisma.sub_mess.findFirst({
-        where: { id: body.sub_mess_id, mess_id: messId },
-        select: { id: true },
-      });
-      if (!target) {
-        throw new BadRequestException('Sub-mess does not belong to your mess');
-      }
-    }
-
     const data = {
       ...(body.sub_mess_id !== undefined
         ? { sub_mess_id: body.sub_mess_id }
@@ -138,14 +115,35 @@ export class TenantsService {
       ...(body.total_due !== undefined ? { total_due: body.total_due } : {}),
     };
 
-    const result = await this.prisma.users.updateMany({
-      where: {
-        id,
-        mess_id: messId,
-        OR: [{ mess_role: 'member' }, { mess_role: 'manager' }],
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const currentUser = await tx.users.findFirst({
+          where: {
+            id,
+            mess_id: messId,
+            OR: [{ mess_role: 'member' }, { mess_role: 'manager' }],
+          },
+          select: { sub_mess_id: true },
+        });
+
+        if (!currentUser) {
+          return { count: 0 };
+        }
+
+        if (
+          body.sub_mess_id !== undefined &&
+          body.sub_mess_id !== currentUser.sub_mess_id
+        ) {
+          await assertSubMessHasAvailableSeat(tx, messId, body.sub_mess_id);
+        }
+
+        return tx.users.updateMany({
+          where: { id, mess_id: messId },
+          data,
+        });
       },
-      data,
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     if (!result.count) throw new NotFoundException('Member not found');
     return { message: 'Members Edited successfully' };
   }

@@ -9,6 +9,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CloudinaryService } from '../common/cloudinary/cloudinary.service.js';
+import { assertSubMessHasAvailableSeat } from '../common/sub-mess.utils.js';
 
 @Injectable()
 export class OnboardService {
@@ -135,6 +136,8 @@ export class OnboardService {
         id: true,
         name: true,
         mess_id: true,
+        no_of_seats: true,
+        _count: { select: { users: true } },
       },
     });
 
@@ -142,7 +145,12 @@ export class OnboardService {
       throw new NotFoundException('No mess found with that ID');
     }
 
-    return rows;
+    return rows.map(({ _count, ...row }) => ({
+      ...row,
+      no_of_members: _count.users,
+      available_seats: Math.max(row.no_of_seats - _count.users, 0),
+      is_full: _count.users >= row.no_of_seats,
+    }));
   }
 
   async createJoinRequest(input: {
@@ -167,14 +175,7 @@ export class OnboardService {
           throw new ConflictException('You are already in a hostel mess');
         }
 
-        const subMess = await tx.sub_mess.findFirst({
-          where: { id: subMessId, mess_id: messId },
-          select: { id: true },
-        });
-
-        if (!subMess) {
-          throw new NotFoundException('Mess or sub-mess not found');
-        }
+        await assertSubMessHasAvailableSeat(tx, messId, subMessId);
 
         return tx.join_requests.create({
           data: {

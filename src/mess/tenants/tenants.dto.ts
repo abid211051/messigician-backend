@@ -1,8 +1,18 @@
 import { z } from 'zod';
+import {
+  MAX_PER_PAGE_ITEMS,
+  PER_PAGE_ITEMS,
+} from '../../common/common.constant.js';
 
 export const allSubMessMembersSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().min(1, 'page must be at least 1').default(1),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1, 'limit must be at least 1')
+      .max(MAX_PER_PAGE_ITEMS, `limit must be at most ${MAX_PER_PAGE_ITEMS}`)
+      .default(PER_PAGE_ITEMS),
     sub_mess_ids: z
       .string()
       .optional()

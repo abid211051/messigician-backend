@@ -1,27 +1,36 @@
 import { z } from 'zod';
-import { PER_PAGE_ITEMS } from '../../common/common.constant.js';
+import {
+  MAX_PER_PAGE_ITEMS,
+} from '../../common/common.constant.js';
 
 const SORT_FIELDS = ['created_at', 'total_rent', 'no_of_members'] as const;
 
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export const getAllSubMessSchema = z.object({
-  query: z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(10, 'limit must be at least 10')
-      .max(40, 'limit must be at most 40')
-      .default(PER_PAGE_ITEMS),
-    search: z
-      .string()
-      .trim()
-      .optional()
-      .transform((value) => value || undefined),
-    sortBy: z.enum(SORT_FIELDS).default('created_at'),
-    sortOrder: z.enum(SORT_ORDERS).default('desc'),
-  }),
+  query: z
+    .object({
+      page: z.coerce.number().int().min(1).optional(),
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1, 'limit must be at least 1')
+        .max(MAX_PER_PAGE_ITEMS, `limit must be at most ${MAX_PER_PAGE_ITEMS}`)
+        .optional(),
+      search: z
+        .string()
+        .trim()
+        .optional()
+        .transform((value) => value || undefined),
+      sortBy: z.enum(SORT_FIELDS).default('created_at'),
+      sortOrder: z.enum(SORT_ORDERS).default('desc'),
+    })
+    .refine(
+      ({ page, limit }) =>
+        (page === undefined && limit === undefined) ||
+        (page !== undefined && limit !== undefined),
+      { error: 'page and limit must be provided together' },
+    ),
 });
 
 export const getSingleSubMessSchema = z.object({
